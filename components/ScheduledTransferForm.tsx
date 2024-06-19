@@ -10,9 +10,12 @@ export default function ScheduledTransferForm () {
         marginBottom: '40px'
       }}
     >
-      <input placeholder='Address to transfer to' />
-      <input placeholder='Amount to transfer' />
-      <input type='datetime-local' placeholder='Date/Time' />
+      <label htmlFor='address'>Address to transfer to:</label>
+      <input id='address' placeholder='0x...' />
+      <label htmlFor='amount'>Amount to transfer:</label>
+      <input id='amount' type='number' placeholder='1' />
+      <label htmlFor='date'>Date/Time to transfer:</label>
+      <input id='date' type='datetime-local' />
       <button>Schedule Transfer</button>
     </form>
   )
