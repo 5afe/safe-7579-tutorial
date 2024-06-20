@@ -12,9 +12,9 @@ export default function Home () {
   const [processedTransfers, setProcessedTransfers] = useState([])
   return (
     <>
-      {safe != null ? (
+      {safe == null ? (
         <>
-          <button>Deploy Safe</button>
+          <button style={{ marginTop: '40px' }}>Deploy Safe</button>
         </>
       ) : (
         <>
