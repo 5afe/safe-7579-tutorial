@@ -10,12 +10,28 @@ export default function ScheduledTransferForm () {
         marginBottom: '40px'
       }}
     >
-      <label htmlFor='address'>Address to transfer to:</label>
-      <input id='address' placeholder='0x...' />
-      <label htmlFor='amount'>Amount to transfer:</label>
-      <input id='amount' type='number' placeholder='1' />
-      <label htmlFor='date'>Date/Time to transfer:</label>
-      <input id='date' type='datetime-local' />
+      <div>
+        <label htmlFor='address'>Address:</label>
+        <input
+          style={{ marginLeft: '20px' }}
+          id='address'
+          placeholder='0x...'
+        />
+      </div>
+      <div>
+        <label htmlFor='amount'>Amount:</label>
+        <input
+          style={{ marginLeft: '20px' }}
+          id='amount'
+          type='number'
+          placeholder='1'
+        />
+      </div>
+      <div>
+        <label htmlFor='date'>Date/Time:</label>
+        <input style={{ marginLeft: '20px' }} id='date' type='datetime-local' />
+      </div>
+
       <button>Schedule Transfer</button>
     </form>
   )
