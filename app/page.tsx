@@ -2,34 +2,28 @@
 
 import { useState } from 'react'
 
+import { getSmartAccountClient } from '../lib/permissionless'
 import ScheduledTransferForm from '../components/ScheduledTransferForm'
-import ScheduledTransfers from '../components/ScheduledTransfers'
-import ProcessedTransfers from '../components/ProcessedTransfers'
+import { SafeSmartAccountClient } from '@/types'
 
 export default function Home () {
-  const [safe, setSafe] = useState()
-  const [scheduledTransfers, setScheduledTransfers] = useState([])
-  const [processedTransfers, setProcessedTransfers] = useState([])
+  const [safe, setSafe] = useState<SafeSmartAccountClient | undefined>()
+
+  const handleLoadSafe = async () => {
+    const safe = await getSmartAccountClient()
+    setSafe(safe)
+  }
+
   return (
     <>
       {safe == null ? (
         <>
-          <button style={{ marginTop: '40px' }}>Deploy Safe</button>
+          <button onClick={handleLoadSafe} style={{ marginTop: '40px' }}>
+            Load Smart Account Client
+          </button>
         </>
       ) : (
-        <>
-          <ScheduledTransferForm />
-          <div
-            style={{
-              width: '100%',
-              display: 'flex',
-              justifyContent: 'center'
-            }}
-          >
-            <ScheduledTransfers transfers={scheduledTransfers} />
-            <ProcessedTransfers transfers={processedTransfers} />
-          </div>
-        </>
+        <ScheduledTransferForm safe={safe} />
       )}
     </>
   )

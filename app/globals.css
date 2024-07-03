@@ -129,3 +129,8 @@ input {
   border: 1px solid #ccc;
   margin: 10px 0;
 }
+
+button:disabled {
+  background: #ccc;
+  color: #666;
+}
