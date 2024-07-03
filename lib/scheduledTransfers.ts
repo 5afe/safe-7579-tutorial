@@ -3,7 +3,13 @@ import {
   getCreateScheduledTransferAction
 } from '@rhinestone/module-sdk'
 
-import type { ScheduledTransferDataInput } from '../types'
+export interface ScheduledTransferDataInput {
+  startDate: number
+  repeatEvery: number
+  numberOfRepeats: number
+  amount: number
+  recipient: `0x${string}`
+}
 
 export const scheduledTransfersModuleAddress =
   '0xF1aE317941efeb1ffB103D959EF58170F1e577E0'

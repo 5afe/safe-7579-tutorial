@@ -2,9 +2,11 @@
 
 import { useState } from 'react'
 
-import { getSmartAccountClient } from '../lib/permissionless'
+import {
+  getSmartAccountClient,
+  type SafeSmartAccountClient
+} from '../lib/permissionless'
 import ScheduledTransferForm from '../components/ScheduledTransferForm'
-import { SafeSmartAccountClient } from '@/types'
 
 export default function Home () {
   const [safe, setSafe] = useState<SafeSmartAccountClient | undefined>()

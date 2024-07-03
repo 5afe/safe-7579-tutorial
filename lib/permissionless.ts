@@ -1,18 +1,29 @@
+import { Hex, createPublicClient, http, Chain, Transport } from 'viem'
+import { generatePrivateKey, privateKeyToAccount } from 'viem/accounts'
+import { sepolia } from 'viem/chains'
 import {
   ENTRYPOINT_ADDRESS_V07,
-  createSmartAccountClient
+  createSmartAccountClient,
+  SmartAccountClient
 } from 'permissionless'
-import { signerToSafeSmartAccount } from 'permissionless/accounts'
-import { erc7579Actions } from 'permissionless/actions/erc7579'
+import {
+  signerToSafeSmartAccount,
+  SafeSmartAccount
+} from 'permissionless/accounts'
+import { erc7579Actions, Erc7579Actions } from 'permissionless/actions/erc7579'
 import {
   createPimlicoBundlerClient,
   createPimlicoPaymasterClient
 } from 'permissionless/clients/pimlico'
-import { Hex, createPublicClient, http } from 'viem'
-import { generatePrivateKey, privateKeyToAccount } from 'viem/accounts'
-import { sepolia } from 'viem/chains'
+import { EntryPoint } from 'permissionless/types'
 
-import type { SafeSmartAccountClient } from '../types'
+export type SafeSmartAccountClient = SmartAccountClient<
+  EntryPoint,
+  Transport,
+  Chain,
+  SafeSmartAccount<EntryPoint>
+> &
+  Erc7579Actions<EntryPoint, SafeSmartAccount<EntryPoint>>
 
 const pimlicoUrl = `https://api.pimlico.io/v2/sepolia/rpc?apikey=${process.env.NEXT_PUBLIC_PIMLICO_API_KEY}`
 const safe4337ModuleAddress = '0x3Fdb5BC686e861480ef99A6E3FaAe03c0b9F32e2'

@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
 
-import { SafeSmartAccountClient } from '@/types'
+import { SafeSmartAccountClient } from '@/lib/permissionless'
 import {
   install7579Module,
   scheduleTransfer,
