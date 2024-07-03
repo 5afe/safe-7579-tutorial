@@ -69,10 +69,5 @@ export const scheduleTransfer = async (
     data: scheduledTransactionData.callData
   })
 
-  console.log(
-    'Scheduled transfer is being executed: https://sepolia.etherscan.io/tx/' +
-      txHash
-  )
-
   return txHash
 }
