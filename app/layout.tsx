@@ -30,7 +30,7 @@ export default function RootLayout ({
           </a>
           <div style={{ display: 'flex' }}>
             <a
-              href='https://docs.safe.global/advanced/erc-7579/tutorial'
+              href='https://docs.safe.global/advanced/erc-7579/tutorials/7579-tutorial'
               style={{
                 display: 'flex',
                 alignItems: 'center',
@@ -64,7 +64,10 @@ export default function RootLayout ({
         <div style={{ width: '100%', textAlign: 'center' }}>
           <h1>Schedule Transfers</h1>
 
-          <div>Create a new 7579 compatible Safe Account and use it to schedule transactions.</div>
+          <div>
+            Create a new 7579 compatible Safe Account and use it to schedule
+            transactions.
+          </div>
         </div>
         <div
           style={{
