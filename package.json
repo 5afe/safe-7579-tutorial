@@ -9,19 +9,19 @@
     "lint": "next lint"
   },
   "dependencies": {
-    "@rhinestone/module-sdk": "^0.1.4",
+    "@rhinestone/module-sdk": "^0.1.7",
     "next": "14.2.4",
     "permissionless": "0.1.34",
-    "react": "^18",
-    "react-dom": "^18",
-    "viem": "^2.16.5"
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1",
+    "viem": "^2.17.9"
   },
   "devDependencies": {
-    "@types/node": "^20",
-    "@types/react": "^18",
-    "@types/react-dom": "^18",
-    "eslint": "^8",
+    "@types/node": "^20.14.11",
+    "@types/react": "^18.3.3",
+    "@types/react-dom": "^18.3.0",
+    "eslint": "^8.57.0",
     "eslint-config-next": "14.2.4",
-    "typescript": "^5"
+    "typescript": "^5.5.3"
   }
 }
