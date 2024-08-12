@@ -17,7 +17,7 @@ import {
 } from 'permissionless/clients/pimlico'
 import { EntryPoint } from 'permissionless/types'
 
-export type SafeSmartAccountClient = SmartAccountClient<
+export type PermissionlessClient = SmartAccountClient<
   EntryPoint,
   Transport,
   Chain,
@@ -53,7 +53,7 @@ const bundlerClient = createPimlicoBundlerClient({
   entryPoint: ENTRYPOINT_ADDRESS_V07
 })
 
-export const getSmartAccountClient = async () => {
+export const getPermissionlessClient = async () => {
   const account = await signerToSafeSmartAccount(publicClient, {
     entryPoint: ENTRYPOINT_ADDRESS_V07,
     signer,
@@ -63,7 +63,7 @@ export const getSmartAccountClient = async () => {
     erc7569LaunchpadAddress
   })
 
-  const smartAccountClient = createSmartAccountClient({
+  const permissionlessClient = createSmartAccountClient({
     chain: sepolia,
     account,
     bundlerTransport: http(pimlicoUrl),
@@ -74,5 +74,5 @@ export const getSmartAccountClient = async () => {
     }
   }).extend(erc7579Actions({ entryPoint: ENTRYPOINT_ADDRESS_V07 }))
 
-  return smartAccountClient as SafeSmartAccountClient
+  return permissionlessClient as PermissionlessClient
 }
