@@ -39,7 +39,7 @@ export const getGuardians = async (safe: PermissionlessClient) => {
   const guardians = await getSocialRecoveryGuardians({
     account,
     client: publicClient
-  })
+  }) as `0x${string}`[]
   return guardians
 }
 

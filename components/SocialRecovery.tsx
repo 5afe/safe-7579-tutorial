@@ -1,10 +1,11 @@
 import { useState, useEffect } from 'react'
+import Img from 'next/image'
 import { SOCIAL_RECOVERY_ADDRESS } from '@rhinestone/module-sdk'
 
 import { PermissionlessClient } from '@/lib/permissionless'
 import {
   install7579Module,
-  addGuardian,
+  // addGuardian,
   getGuardians
 } from '@/lib/socialRecovery'
 
@@ -40,16 +41,39 @@ const ScheduledTransferForm: React.FC<{ safe: PermissionlessClient }> = ({
 
   return (
     <>
-      <div style={{ marginTop: '40px' }}>Your Safe: {safe.account.address}</div>{' '}
+      <div style={{ marginTop: '40px', display: 'flex' }}>
+        Your Safe:{' '}
+        <a
+          href={`https://app.safe.global/home?safe=sep:${safe.account.address}`}
+          style={{
+            display: 'flex',
+            alignItems: 'center',
+            marginRight: '1rem',
+            marginLeft: '1rem'
+          }}
+          target='_blank'
+          rel='noopener noreferrer'
+        >
+          {splitAddress(safe.account.address)}{' '}
+          <Img
+            width={20}
+            height={20}
+            alt='link-icon'
+            src='/external-link.svg'
+            style={{ marginLeft: '0.5rem' }}
+          />
+        </a>
+      </div>{' '}
       <div style={{ marginTop: '10px' }}>
         Social Recovery module installed:{' '}
         {is7579Installed ? (
           'Yes ✅'
         ) : (
           <>
-            No, add at least two guardians to install it!
+            <p>No, add at least two guardians to install it!</p>
             <button
               disabled={is7579Installed || guardians.length < threshold}
+              style={{ marginLeft: '10px' }}
               onClick={async () => {
                 setLoading(true)
                 setError(false)
@@ -144,7 +168,9 @@ const ScheduledTransferForm: React.FC<{ safe: PermissionlessClient }> = ({
               // })
               // setTxHash(txHash)
             }}
-          >Sign Message</button>
+          >
+            Sign Message
+          </button>
         </div>
       )}
     </>
@@ -234,4 +260,14 @@ const Guardian: React.FC<{
       ) : null}
     </div>
   )
+}
+
+function splitAddress(
+  address: string,
+  charDisplayed: number = 6
+): string {
+  const firstPart = address.slice(0, charDisplayed)
+  const lastPart = address.slice(address.length - charDisplayed)
+
+  return `${firstPart}...${lastPart}`
 }
