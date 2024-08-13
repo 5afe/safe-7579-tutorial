@@ -2,16 +2,20 @@ import Safe from '@safe-global/protocol-kit'
 import { parseEther, encodeFunctionData } from 'viem'
 import { PermissionlessClient } from './permissionless'
 
-export const isSafeDeployed = async (safeAddress: string): Promise<boolean> => {
+export const rpcUrl = 'https://rpc.ankr.com/eth_sepolia'
+
+export const isSafeDeployed = async (
+  safeAddress: string
+): Promise<boolean | null> => {
   const protocolKit = await Safe.init({
     // @ts-ignore
-    provider: window.ethereum,
+    provider: rpcUrl,
     signer: process.env.NEXT_PUBLIC_PRIVATE_KEY,
     safeAddress
-  }).catch(e => {
-    return null
+  }).catch(err => {
+    console.error(err)
   })
-  return protocolKit ? await protocolKit.isSafeDeployed() : false
+  return protocolKit ? await protocolKit.isSafeDeployed() : null
 }
 
 const NFT_ADDRESS = '0xBb9ebb7b8Ee75CDBf64e5cE124731A89c2BC4A07'
@@ -48,12 +52,8 @@ export const deploySafe = async (
       args: [permissionlessClient.account.address, getRandomUint256()]
     })
   }
-  const txHash = await permissionlessClient
-    .sendTransaction(nftTransaction)
-    .catch(e => {
-      console.error(e)
-      return ''
-    })
+  const txHash = await permissionlessClient.sendTransaction(nftTransaction)
+
   return txHash
 }
 

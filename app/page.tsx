@@ -17,7 +17,7 @@ export default function Home () {
   const handleLoadSafe = async () => {
     const safe = await getPermissionlessClient()
     const isDeployed = await isSafeDeployed(safe.account.address)
-    if (!isDeployed) {
+    if (isDeployed === false) {
       const txHash = await deploySafe(safe)
       console.log(
         'Safe is being deployed: https://sepolia.etherscan.io/tx/' + txHash

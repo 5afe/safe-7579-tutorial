@@ -16,6 +16,7 @@ import {
   createPimlicoPaymasterClient
 } from 'permissionless/clients/pimlico'
 import { EntryPoint } from 'permissionless/types'
+import { rpcUrl } from './safe'
 
 export type PermissionlessClient = SmartAccountClient<
   EntryPoint,
@@ -40,7 +41,7 @@ const privateKey =
 const signer = privateKeyToAccount(privateKey)
 
 export const publicClient = createPublicClient({
-  transport: http('https://rpc.ankr.com/eth_sepolia')
+  transport: http(rpcUrl)
 })
 
 const paymasterClient = createPimlicoPaymasterClient({
