@@ -33,6 +33,7 @@ const SocialRecovery: React.FC<{
   >({})
   const [is7579Installed, setIs7579Installed] = useState(false)
   const [threshold, setThreshold] = useState(2)
+  const [success, setSuccess] = useState(false)
 
   useEffect(() => {
     const initSocialRecoveryModule = async () => {
@@ -174,17 +175,23 @@ const SocialRecovery: React.FC<{
                 userOp as UserOpRequest,
                 ...Object.values(signatures)
               )
+                .then(async receipt => {
+                  // refresh safe data
+                  const safeData = await getSafeData(
+                    permissionlessClient.account.address
+                  )
+                  setSafeOwners(safeData.owners as `0x${string}`[])
 
-              // refresh safe data
-              const safeData = await getSafeData(
-                permissionlessClient.account.address
-              )
-              setSafeOwners(safeData.owners as `0x${string}`[])
+                  // reset state
+                  setUserOp(null)
+                  setUserOpHash(null)
+                  setSignatures({})
+                  setSuccess(true)
+                })
+                .catch(err => {
+                  console.error(err)
+                })
 
-              // reset state
-              setUserOp(null)
-              setUserOpHash(null)
-              setSignatures({})
               setLoading(false)
             }}
           >
@@ -199,8 +206,12 @@ const SocialRecovery: React.FC<{
         </div>
       )}
       {error ? (
-        <p>There was an error processing the transaction. Please try again.</p>
+        <p>
+          There was an error processing the transaction. Please refresh the page
+          or try again.
+        </p>
       ) : null}
+      {success ? <p>Recovery successful! 🎉</p> : null}
     </>
   )
 }

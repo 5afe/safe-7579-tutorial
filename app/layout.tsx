@@ -66,7 +66,7 @@ export default function RootLayout ({
           </div>
         </nav>
         <div style={{ width: '100%', textAlign: 'center' }}>
-          <h1>Social Recovery</h1>
+          <h1>Social Recovery 🛟</h1>
 
           <div>
             Create an ERC-7579-compatible Safe Smart Account and use{' '}

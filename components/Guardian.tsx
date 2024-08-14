@@ -2,8 +2,6 @@ import { useState, useEffect } from 'react'
 import type { WalletClient } from 'viem'
 import { CircularProgress } from '@mui/material'
 
-import type { PermissionlessClient } from '@/lib/permissionless'
-
 const Guardian: React.FC<{
   index: number
   guardians: `0x${string}`[] | null
@@ -25,12 +23,10 @@ const Guardian: React.FC<{
   walletClient,
   is7579Installed
 }) => {
-  const [_guardian, setGuardian] = useState<`0x${string}` | null>(
-    guardians?.[index] ?? null
+  const [_guardian, setGuardian] = useState<`0x${string}` | ''>(
+    guardians?.[index] ?? ''
   )
   const [loading, setLoading] = useState(false)
-  const [error, setError] = useState(false)
-  const [txHash, setTxHash] = useState('')
 
   return (
     <div
@@ -96,7 +92,7 @@ const Guardian: React.FC<{
             <input
               type='text'
               style={{ width: '50%' }}
-              value={_guardian ?? undefined}
+              value={_guardian}
               onChange={e => setGuardian(e.target.value as `0x${string}`)}
               placeholder='Guardian address'
             />
@@ -115,28 +111,6 @@ const Guardian: React.FC<{
           </>
         )}{' '}
       </div>
-      {loading ? <p>Processing, please wait...</p> : null}
-      {error ? (
-        <p>There was an error processing the transaction. Please try again.</p>
-      ) : null}
-      {txHash ? (
-        <>
-          <p>
-            Success!{' '}
-            <a
-              href={`https://sepolia.etherscan.io/tx/${txHash}`}
-              target='_blank'
-              rel='noreferrer'
-              style={{
-                textDecoration: 'underline',
-                fontSize: '14px'
-              }}
-            >
-              View on Etherscan
-            </a>
-          </p>
-        </>
-      ) : null}
     </div>
   )
 }
