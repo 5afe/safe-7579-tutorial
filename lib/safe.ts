@@ -57,17 +57,19 @@ export const deploySafe = async (
     })
   }
 
-  const txHash = await permissionlessClient.sendTransaction(nftTransaction)
-  
+  const txHash = await permissionlessClient
+    .sendTransaction(nftTransaction)
+    .catch(err => {
+      console.error(err)
+    })
+
+  if (!txHash) return
   console.info(
     'Safe is being deployed: https://jiffyscan.xyz/userOpHash/' + txHash
   )
-
-  const receipt = await bundlerClient.waitForUserOperationReceipt({
+  return await bundlerClient.waitForUserOperationReceipt({
     hash: txHash
   })
-
-  return receipt
 }
 
 function getRandomUint256 (): bigint {
