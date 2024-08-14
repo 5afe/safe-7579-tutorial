@@ -1,42 +1,61 @@
 'use client'
 
 import { useState } from 'react'
-
+import CircularProgress from '@mui/material/CircularProgress'
 import {
   getPermissionlessClient,
   type PermissionlessClient
-} from '../lib/permissionless'
-import { deploySafe } from '../lib/safe'
-
-import SocialRecovery from '../components/SocialRecovery'
-import { isSafeDeployed } from '@/lib/safe'
+} from '@/lib/permissionless'
+import { deploySafe, getSafeData } from '@/lib/safe'
+import SafeAccountDetails from '@/components/SafeAccountDetails'
+import SocialRecovery from '@/components/SocialRecovery'
 
 export default function Home () {
-  const [safe, setSafe] = useState<PermissionlessClient | undefined>()
+  const [permissionlessClient, setPermissionlessClient] = useState<
+    PermissionlessClient | undefined
+  >()
+
+  const [loading, setLoading] = useState(false)
+  const [safeOwners, setSafeOwners] = useState<`0x${string}`[]>()
 
   const handleLoadSafe = async () => {
-    const safe = await getPermissionlessClient()
-    const isDeployed = await isSafeDeployed(safe.account.address)
-    if (isDeployed === false) {
-      const txHash = await deploySafe(safe)
+    setLoading(true)
+    const permissionlessClient = await getPermissionlessClient()
+    const safeData = await getSafeData(permissionlessClient.account.address)
+    if (safeData.isDeployed === false) {
+      const txHash = await deploySafe(permissionlessClient)
       console.log(
         'Safe is being deployed: https://sepolia.etherscan.io/tx/' + txHash
       )
     }
-    setSafe(safe)
+    setPermissionlessClient(permissionlessClient)
+    setSafeOwners(safeData.owners as `0x${string}`[])
+    setLoading(false)
   }
 
   return (
     <>
-      {safe == null ? (
+      {permissionlessClient == null ? (
         <>
-          <button onClick={handleLoadSafe} style={{ marginTop: '40px' }}>
-            Create Safe
+          <button
+            disabled={loading}
+            onClick={handleLoadSafe}
+            style={{ marginTop: '40px' }}
+          >
+            {loading ? (
+              <>
+                Loading...{' '}
+                <CircularProgress size='10px' sx={{ color: 'black' }} />
+              </>
+            ) : (
+              'Create Safe'
+            )}
           </button>
         </>
       ) : (
         <>
-          <SocialRecovery safe={safe} />
+          <SafeAccountDetails {...{ permissionlessClient, safeOwners }} />
+          <SocialRecovery {...{ permissionlessClient, setSafeOwners }} />
         </>
       )}
     </>

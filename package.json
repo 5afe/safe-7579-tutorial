@@ -9,6 +9,9 @@
     "lint": "next lint"
   },
   "dependencies": {
+    "@emotion/react": "^11.13.0",
+    "@emotion/styled": "^11.13.0",
+    "@mui/material": "^5.16.7",
     "@rhinestone/module-sdk": "^0.1.7",
     "@safe-global/protocol-kit": "^4.0.4",
     "next": "14.2.4",

@@ -49,13 +49,13 @@ const paymasterClient = createPimlicoPaymasterClient({
   entryPoint: ENTRYPOINT_ADDRESS_V07
 })
 
-const bundlerClient = createPimlicoBundlerClient({
+export const bundlerClient = createPimlicoBundlerClient({
   transport: http(pimlicoUrl),
   entryPoint: ENTRYPOINT_ADDRESS_V07
 })
 
-export const getPermissionlessClient = async () => {
-  const account = await signerToSafeSmartAccount(publicClient, {
+export const getPermissionlessAccount = async () =>
+  await signerToSafeSmartAccount(publicClient, {
     entryPoint: ENTRYPOINT_ADDRESS_V07,
     signer,
     safeVersion: '1.4.1',
@@ -63,6 +63,9 @@ export const getPermissionlessClient = async () => {
     safe4337ModuleAddress,
     erc7569LaunchpadAddress
   })
+
+export const getPermissionlessClient = async () => {
+  const account = await getPermissionlessAccount()
 
   const permissionlessClient = createSmartAccountClient({
     chain: sepolia,

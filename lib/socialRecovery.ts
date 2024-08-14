@@ -1,3 +1,6 @@
+import { concat } from 'viem'
+import { PrepareUserOperationRequestReturnType } from 'permissionless/actions/smartAccount'
+import { ENTRYPOINT_ADDRESS_V07_TYPE } from 'permissionless/types'
 import {
   getSocialRecoveryValidator,
   getAddSocialRecoveryGuardianAction,
@@ -5,13 +8,21 @@ import {
   getAccount,
   SOCIAL_RECOVERY_ADDRESS
 } from '@rhinestone/module-sdk'
-import { AbiCoder } from 'ethers'
 
-import { PermissionlessClient, publicClient } from './permissionless'
+import {
+  bundlerClient,
+  PermissionlessClient,
+  publicClient
+} from './permissionless'
 export interface SocialRecoveryDataInput {
   guardians: `0x${string}`[]
   threshold: number
 }
+
+export type UserOpRequest = Omit<
+  PrepareUserOperationRequestReturnType<ENTRYPOINT_ADDRESS_V07_TYPE>,
+  'initCode' | 'paymasterAndData'
+>
 
 export const install7579Module = async (
   safe: PermissionlessClient,
@@ -31,15 +42,18 @@ export const install7579Module = async (
       txHash
   )
 
-  return txHash
+  const receipt = await bundlerClient.waitForUserOperationReceipt({
+    hash: txHash
+  })
+  return receipt
 }
 
 export const getGuardians = async (safe: PermissionlessClient) => {
   const account = getAccount({ address: safe.account.address, type: 'safe' })
-  const guardians = await getSocialRecoveryGuardians({
+  const guardians = (await getSocialRecoveryGuardians({
     account,
     client: publicClient
-  }) as `0x${string}`[]
+  })) as `0x${string}`[]
   return guardians
 }
 
@@ -57,82 +71,29 @@ export const addGuardian = async (
   console.log(
     'Guardian is being added: https://sepolia.etherscan.io/tx/' + txHash
   )
-  return txHash
+
+  const receipt = await bundlerClient.waitForUserOperationReceipt({
+    hash: txHash
+  })
+  return receipt
 }
 
-export const getUserOpHash = async (safe: PermissionlessClient) => {
-  // const abiCoder = new AbiCoder()
-  // const packedData = abiCoder.encode(
-  //   [
-  //     'address',
-  //     'uint256',
-  //     'bytes32',
-  //     'bytes32',
-  //     'uint256',
-  //     'uint256',
-  //     'uint256',
-  //     'uint256',
-  //     'uint256',
-  //     'bytes32'
-  //   ],
-  //   [
-  //     safe.account.address,
-  //     0,
-  //     ethers.utils.keccak256(initCode),
-  //     ethers.utils.keccak256(callData),
-  //     callGasLimit,
-  //     verificationGasLimit,
-  //     preVerificationGas,
-  //     maxFeePerGas,
-  //     maxPriorityFeePerGas,
-  //     ethers.utils.keccak256(paymasterAndData)
-  //   ]
-  // )
-
-  // const enc = abiCoder.encode(
-  //   ['bytes32', 'address', 'uint256'],
-  //   [keccak256(packedData), entryPoint, chainId]
-  // )
-
-  // const userOpHash = keccak256(enc)
-  // return userOpHash
+export const recoverSafe = async (
+  safe: PermissionlessClient,
+  userOp: UserOpRequest,
+  ...signatures: `0x${string}`[]
+) => {
+  const txHash = await safe.sendUserOperation({
+    userOperation: {
+      ...userOp,
+      signature: concat(signatures)
+    }
+  })
+  console.info(
+    'Safe is being recovered: https://jiffyscan.xyz/userOpHash/' + txHash
+  )
+  const receipt = await bundlerClient.waitForUserOperationReceipt({
+    hash: txHash
+  })
+  return receipt
 }
-
-// export const scheduleTransfer = async (
-//   safe: SafeSmartAccountClient,
-//   scheduledTransferInput: ScheduledTransferDataInput
-// ) => {
-//   const { startDate, repeatEvery, numberOfRepeats, amount, recipient } =
-//     scheduledTransferInput
-//   const scheduledTransfer = {
-//     startDate,
-//     repeatEvery,
-//     numberOfRepeats,
-//     token: {
-//       token_address: sepoliaUSDCTokenAddress as `0x${string}`,
-//       decimals: 6
-//     },
-//     amount,
-//     recipient
-//   }
-
-//   const scheduledTransferData = getCreateScheduledTransferAction({
-//     scheduledTransfer
-//   })
-//   const txHash = await safe.sendTransaction({
-//     to: scheduledTransferData.target,
-//     value: scheduledTransferData.value as bigint,
-//     data: scheduledTransferData.callData
-//   })
-
-//   console.log(
-//     'Transfer is being scheduled: https://sepolia.etherscan.io/tx/' + txHash
-//   )
-//   return txHash
-// }
-
-// export const executeOrder = async (jobId: number) => {
-//   const executeTransfer = getExecuteScheduledTransferAction({ jobId })
-//   console.log(executeTransfer)
-//   return executeTransfer
-// }

@@ -1,111 +1,89 @@
-import { useState, useEffect } from 'react'
-import Img from 'next/image'
+import { useEffect, useState } from 'react'
 import { SOCIAL_RECOVERY_ADDRESS } from '@rhinestone/module-sdk'
+import CircularProgress from '@mui/material/CircularProgress'
+import { createWalletClient, custom, WalletClient } from 'viem'
+import { sepolia } from 'viem/chains'
 
-import { PermissionlessClient } from '@/lib/permissionless'
+import Guardian from '@/components/Guardian'
+import { type PermissionlessClient } from '@/lib/permissionless'
 import {
+  recoverSafe,
+  UserOpRequest,
   install7579Module,
-  // addGuardian,
   getGuardians
 } from '@/lib/socialRecovery'
+import { getSafeData } from '@/lib/safe'
+import { getUserOp, getUserOpHash } from '@/lib/userOp'
 
-const threshold = 2
-
-const ScheduledTransferForm: React.FC<{ safe: PermissionlessClient }> = ({
-  safe
-}) => {
-  const [txHash, setTxHash] = useState('')
+const SocialRecovery: React.FC<{
+  permissionlessClient: PermissionlessClient
+  setSafeOwners: React.Dispatch<
+    React.SetStateAction<`0x${string}`[] | undefined>
+  >
+}> = ({ permissionlessClient, setSafeOwners }) => {
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState(false)
-  const [is7579Installed, setIs7579Installed] = useState(false)
+  const [txHash, setTxHash] = useState('')
   const [guardians, setGuardians] = useState<`0x${string}`[]>([])
-  const [showRecoverSafe, setShowRecoverSafe] = useState(false)
+  const [walletClient, setWalletClient] = useState<WalletClient | null>(null)
+  const [userOp, setUserOp] = useState<UserOpRequest | null>(null)
+  const [userOpHash, setUserOpHash] = useState<`0x${string}` | null>(null)
+  const [signatures, setSignatures] = useState<
+    Record<`0x${string}`, `0x${string}`>
+  >({})
+  const [is7579Installed, setIs7579Installed] = useState(false)
+  const [threshold, setThreshold] = useState(2)
 
   useEffect(() => {
-    const initSocialRecovery = async () => {
-      const isSocialRecoveryInstalled = await safe
+    const initSocialRecoveryModule = async () => {
+      if (permissionlessClient == null) return
+      const isSocialRecoveryInstalled = await permissionlessClient
         .isModuleInstalled({
           type: 'validator',
           address: SOCIAL_RECOVERY_ADDRESS,
           context: '0x'
         })
-        .catch(() => false)
+        .catch(err => {
+          console.error(err)
+          return false
+        })
       if (isSocialRecoveryInstalled) {
         setIs7579Installed(true)
-        const guardians = await getGuardians(safe)
-        setGuardians(guardians)
+        const _guardians = await getGuardians(permissionlessClient)
+        setGuardians(_guardians)
       }
     }
-    void initSocialRecovery()
-  }, [safe])
+    initSocialRecoveryModule()
+  }, [permissionlessClient])
 
+  useEffect(() => {
+    const initRecovery = async () => {
+      if (permissionlessClient != null && guardians.length > 0) {
+        const userOp = await getUserOp(permissionlessClient, guardians[0])
+        const walletClient = createWalletClient({
+          chain: sepolia,
+          // @ts-ignore
+          transport: custom(window.ethereum)
+        })
+
+        await walletClient.requestAddresses()
+
+        setUserOp(userOp)
+        setUserOpHash(getUserOpHash(userOp))
+        setWalletClient(walletClient)
+      }
+    }
+    initRecovery()
+  }, [permissionlessClient, guardians])
   return (
     <>
-      <div style={{ marginTop: '40px', display: 'flex' }}>
-        Your Safe:{' '}
-        <a
-          href={`https://app.safe.global/home?safe=sep:${safe.account.address}`}
-          style={{
-            display: 'flex',
-            alignItems: 'center',
-            marginRight: '1rem',
-            marginLeft: '1rem'
-          }}
-          target='_blank'
-          rel='noopener noreferrer'
-        >
-          {splitAddress(safe.account.address)}{' '}
-          <Img
-            width={20}
-            height={20}
-            alt='link-icon'
-            src='/external-link.svg'
-            style={{ marginLeft: '0.5rem' }}
-          />
-        </a>
-      </div>{' '}
       <div style={{ marginTop: '10px' }}>
         Social Recovery module installed:{' '}
-        {is7579Installed ? (
-          'Yes ✅'
-        ) : (
-          <>
-            <p>No, add at least two guardians to install it!</p>
-            <button
-              disabled={is7579Installed || guardians.length < threshold}
-              style={{ marginLeft: '10px' }}
-              onClick={async () => {
-                setLoading(true)
-                setError(false)
-                const socialRecoveryDataInput = {
-                  guardians,
-                  threshold
-                }
-                await install7579Module(safe, socialRecoveryDataInput)
-                  .then(txHash => {
-                    setTxHash(txHash)
-                    setLoading(false)
-                    setIs7579Installed(true)
-                  })
-                  .catch(err => {
-                    console.error(err)
-                    setLoading(false)
-                    setError(true)
-                  })
-              }}
-            >
-              Enable Social Recovery
-            </button>
-          </>
-        )}
+        {is7579Installed
+          ? 'Yes ✅'
+          : 'No, add at least two guardians to install it!'}
       </div>
       <div>
-        {loading ? <p>Processing, please wait...</p> : null}
-        {error ? (
-          <p>
-            There was an error processing the transaction. Please try again.
-          </p>
-        ) : null}
         {txHash ? (
           <>
             <p>
@@ -136,138 +114,95 @@ const ScheduledTransferForm: React.FC<{ safe: PermissionlessClient }> = ({
         }}
       >
         {Array.from({ length: threshold }).map((_, i) => (
-          <Guardian key={i} index={i} {...{ safe, guardians, setGuardians }} />
+          <Guardian
+            key={i}
+            index={i}
+            {...{
+              guardians,
+              setGuardians,
+              userOpHash,
+              signatures,
+              setSignatures,
+              walletClient,
+              is7579Installed
+            }}
+          />
         ))}
       </div>
-      {is7579Installed && (
-        <div>
+      {!is7579Installed ? (
+        <button
+          disabled={guardians.length < threshold || loading}
+          style={{ marginLeft: '10px' }}
+          onClick={async () => {
+            setLoading(true)
+            setError(false)
+            await install7579Module(permissionlessClient, {
+              guardians,
+              threshold
+            })
+              .then(receipt => {
+                setTxHash(receipt.receipt.transactionHash)
+                setIs7579Installed(true)
+              })
+              .catch(err => {
+                console.error(err)
+                setError(true)
+              })
+            setLoading(false)
+          }}
+        >
+          Enable Social Recovery
+          {loading ? (
+            <CircularProgress
+              size='8px'
+              sx={{ marginLeft: '4px', color: 'black' }}
+            />
+          ) : null}
+        </button>
+      ) : (
+        <div style={{ display: 'flex' }}>
           <button
+            disabled={
+              Object.keys(signatures).length < threshold || !userOp || loading
+            }
+            style={{ marginLeft: '10px' }}
             onClick={async () => {
-              // const txHash = await safe.sendTransaction({
-              //   to: SOCIAL_RECOVERY_ADDRESS,
-              //   value: BigInt(0),
-              //   data: '0x'
-              // })
-              // setTxHash(txHash)
-              setShowRecoverSafe(true)
+              setLoading(true)
+              setError(false)
+              await recoverSafe(
+                permissionlessClient,
+                userOp as UserOpRequest,
+                ...Object.values(signatures)
+              )
+
+              // refresh safe data
+              const safeData = await getSafeData(
+                permissionlessClient.account.address
+              )
+              setSafeOwners(safeData.owners as `0x${string}`[])
+
+              // reset state
+              setUserOp(null)
+              setUserOpHash(null)
+              setSignatures({})
+              setLoading(false)
             }}
           >
-            Recover Safe
+            Execute Recovery
+            {loading ? (
+              <CircularProgress
+                size='8px'
+                sx={{ marginLeft: '4px', color: 'black' }}
+              />
+            ) : null}
           </button>
         </div>
       )}
-      {showRecoverSafe && (
-        <div>
-          <p>Sign Message with Guardian #1:</p>
-          <button
-            onClick={async () => {
-              // const txHash = await safe.sendTransaction({
-              //   to: SOCIAL_RECOVERY_ADDRESS,
-              //   value: BigInt(0),
-              //   data: '0x'
-              // })
-              // setTxHash(txHash)
-            }}
-          >
-            Sign Message
-          </button>
-        </div>
-      )}
+      {error ? (
+        <p>There was an error processing the transaction. Please try again.</p>
+      ) : null}
     </>
   )
 }
 
-export default ScheduledTransferForm
-
-const Guardian: React.FC<{
-  index: number
-  guardians: `0x${string}`[] | null
-  setGuardians: React.Dispatch<React.SetStateAction<`0x${string}`[]>>
-  safe: PermissionlessClient
-}> = ({ index, guardians, setGuardians, safe }) => {
-  const [_guardian, setGuardian] = useState<`0x${string}` | null>(
-    guardians?.[index] ?? null
-  )
-  const [loading, setLoading] = useState(false)
-  const [error, setError] = useState(false)
-  const [txHash, setTxHash] = useState('')
-
-  return (
-    <div
-      style={{
-        display: 'flex',
-        flexDirection: 'column',
-        marginBottom: '20px'
-      }}
-    >
-      <div style={{ marginBottom: '10px' }}>Guardian #{index + 1}</div>
-      {guardians?.[index] ?? (
-        <>
-          <input
-            type='text'
-            value={_guardian ?? undefined}
-            onChange={e => setGuardian(e.target.value as `0x${string}`)}
-            placeholder='Guardian address'
-          />
-          <button
-            disabled={!_guardian || loading}
-            onClick={async () => {
-              // setLoading(true)
-              // setError(false)
-              setGuardians(prevGuardians => {
-                const _guardians = [...prevGuardians]
-                _guardians[index] = _guardian as `0x${string}`
-                return _guardians
-              })
-              // await addGuardian(safe, _guardian as `0x${string}`)
-              //   .then(txHash => {
-              //     setTxHash(txHash)
-              //     setLoading(false)
-              //     setGuardian(null)
-              //   })
-              //   .catch(err => {
-              //     console.error(err)
-              //     setLoading(false)
-              //     setError(true)
-              //   })
-            }}
-          >
-            Add Guardian
-          </button>
-        </>
-      )}
-      {loading ? <p>Processing, please wait...</p> : null}
-      {error ? (
-        <p>There was an error processing the transaction. Please try again.</p>
-      ) : null}
-      {txHash ? (
-        <>
-          <p>
-            Success!{' '}
-            <a
-              href={`https://sepolia.etherscan.io/tx/${txHash}`}
-              target='_blank'
-              rel='noreferrer'
-              style={{
-                textDecoration: 'underline',
-                fontSize: '14px'
-              }}
-            >
-              View on Etherscan
-            </a>
-          </p>
-        </>
-      ) : null}
-    </div>
-  )
-}
-
-function splitAddress(
-  address: string,
-  charDisplayed: number = 6
-): string {
-  const firstPart = address.slice(0, charDisplayed)
-  const lastPart = address.slice(address.length - charDisplayed)
-
-  return `${firstPart}...${lastPart}`
-}
+export default SocialRecovery

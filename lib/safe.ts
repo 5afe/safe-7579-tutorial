@@ -1,12 +1,12 @@
 import Safe from '@safe-global/protocol-kit'
 import { parseEther, encodeFunctionData } from 'viem'
-import { PermissionlessClient } from './permissionless'
+import { bundlerClient, PermissionlessClient } from './permissionless'
 
 export const rpcUrl = 'https://rpc.ankr.com/eth_sepolia'
 
-export const isSafeDeployed = async (
+export const getSafeData = async (
   safeAddress: string
-): Promise<boolean | null> => {
+): Promise<{ isDeployed: boolean; owners: string[] }> => {
   const protocolKit = await Safe.init({
     // @ts-ignore
     provider: rpcUrl,
@@ -15,7 +15,11 @@ export const isSafeDeployed = async (
   }).catch(err => {
     console.error(err)
   })
-  return protocolKit ? await protocolKit.isSafeDeployed() : null
+
+  if (!protocolKit) return { isDeployed: false, owners: [] }
+  const isDeployed = await protocolKit.isSafeDeployed()
+  const owners = await protocolKit.getOwners()
+  return { isDeployed, owners }
 }
 
 const NFT_ADDRESS = '0xBb9ebb7b8Ee75CDBf64e5cE124731A89c2BC4A07'
@@ -52,9 +56,18 @@ export const deploySafe = async (
       args: [permissionlessClient.account.address, getRandomUint256()]
     })
   }
-  const txHash = await permissionlessClient.sendTransaction(nftTransaction)
 
-  return txHash
+  const txHash = await permissionlessClient.sendTransaction(nftTransaction)
+  
+  console.info(
+    'Safe is being deployed: https://jiffyscan.xyz/userOpHash/' + txHash
+  )
+
+  const receipt = await bundlerClient.waitForUserOperationReceipt({
+    hash: txHash
+  })
+
+  return receipt
 }
 
 function getRandomUint256 (): bigint {
