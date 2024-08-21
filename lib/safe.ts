@@ -1,16 +1,16 @@
 import Safe from '@safe-global/protocol-kit'
-import { parseEther, encodeFunctionData } from 'viem'
-import { bundlerClient, PermissionlessClient } from './permissionless'
+import { parseEther, encodeFunctionData, WalletClient } from 'viem'
 
-export const rpcUrl = 'https://rpc.ankr.com/eth_sepolia'
+import { rpcUrl, bundlerClient, PermissionlessClient } from './permissionless'
 
 export const getSafeData = async (
-  safeAddress: string
+  safeAddress: string,
+  signer: WalletClient
 ): Promise<{ isDeployed: boolean; owners: string[] }> => {
   const protocolKit = await Safe.init({
-    // @ts-ignore
     provider: rpcUrl,
-    signer: process.env.NEXT_PUBLIC_PRIVATE_KEY,
+    // @ts-ignore
+    signer: window.ethereum.account,
     safeAddress
   }).catch(err => {
     console.error(err)
@@ -68,7 +68,8 @@ export const deploySafe = async (
     'Safe is being deployed: https://jiffyscan.xyz/userOpHash/' + txHash
   )
   return await bundlerClient.waitForUserOperationReceipt({
-    hash: txHash
+    hash: txHash,
+    timeout: 120000
   })
 }
 

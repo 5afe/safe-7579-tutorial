@@ -43,7 +43,8 @@ export const install7579Module = async (
   )
 
   const receipt = await bundlerClient.waitForUserOperationReceipt({
-    hash: txHash
+    hash: txHash,
+    timeout: 120000
   })
   return receipt
 }
@@ -73,7 +74,8 @@ export const addGuardian = async (
   )
 
   const receipt = await bundlerClient.waitForUserOperationReceipt({
-    hash: txHash
+    hash: txHash,
+    timeout: 120000
   })
   return receipt
 }
@@ -93,7 +95,8 @@ export const recoverSafe = async (
     'Safe is being recovered: https://jiffyscan.xyz/userOpHash/' + txHash
   )
   const receipt = await bundlerClient.waitForUserOperationReceipt({
-    hash: txHash
+    hash: txHash,
+    timeout: 120000
   })
   return receipt
 }

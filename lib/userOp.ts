@@ -8,7 +8,8 @@ import {
 import {
   bundlerClient,
   getPermissionlessAccount,
-  PermissionlessClient
+  PermissionlessClient,
+  WalletClientWithTransport
 } from './permissionless'
 import { sepolia } from 'viem/chains'
 import { ENTRYPOINT_ADDRESS_V07 } from 'permissionless'
@@ -26,10 +27,11 @@ export type UserOpRequest = Omit<
 >
 
 export const getUserOp = async (
+  walletClient: WalletClientWithTransport,
   permissionlessClient: PermissionlessClient,
   newOwner: `0x${string}`
 ) => {
-  const permissionlessAccount = await getPermissionlessAccount()
+  const permissionlessAccount = await getPermissionlessAccount(walletClient)
 
   const callData = await permissionlessAccount.encodeCallData({
     to: permissionlessClient.account.address,
