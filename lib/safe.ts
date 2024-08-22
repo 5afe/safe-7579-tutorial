@@ -1,11 +1,12 @@
 import Safe from '@safe-global/protocol-kit'
-import { parseEther, encodeFunctionData } from 'viem'
+import { parseEther, encodeFunctionData, SendTransactionParameters } from 'viem'
 
 import { rpcUrl, bundlerClient, PermissionlessClient } from './permissionless'
+import { sepolia } from 'viem/chains'
 
 // Fetches onchain data about the safe (owners and whether it was deployed)
 export const getSafeData = async (
-  safeAddress: string,
+  safeAddress: string
 ): Promise<{ isDeployed: boolean; owners: string[] }> => {
   const protocolKit = await Safe.init({
     provider: rpcUrl,
@@ -59,8 +60,8 @@ export const deploySafe = async (
   }
 
   const txHash = await permissionlessClient
-    .sendTransaction(nftTransaction)
-    .catch(err => {
+    .sendTransaction(nftTransaction as SendTransactionParameters)
+    .catch((err: string) => {
       console.error(err)
     })
 

@@ -1,7 +1,13 @@
 'use client'
 
 import { useState } from 'react'
-import { createWalletClient, custom, getAddress } from 'viem'
+import {
+  type Account,
+  createWalletClient,
+  custom,
+  getAddress,
+  type HttpTransport
+} from 'viem'
 import { sepolia } from 'viem/chains'
 
 import {
@@ -32,18 +38,24 @@ export default function Home () {
   const handleConnectWallet = async () => {
     setLoading(true)
     // @ts-ignore
-    const accounts = await window.ethereum.request({ // Requests the accounts from the user's wallet (e.g. Metamask)
+    const accounts = await window.ethereum.request({
+      // Requests the accounts from the user's wallet (e.g. Metamask)
       method: 'eth_requestAccounts'
     })
 
     const checksummed = accounts.map((account: string) => getAddress(account))
 
-    const walletClient = createWalletClient({ // Creates the viem wallet client
+    const walletClient = createWalletClient<
+      HttpTransport,
+      typeof sepolia,
+      Account
+    >({
+      // Creates the viem wallet client
       account: accounts[0],
       chain: sepolia,
       // @ts-ignore
       transport: custom(window.ethereum)
-    }) as WalletClientWithTransport
+    })
 
     const permissionlessClient = await getPermissionlessClient(walletClient) // Creates the permissionless client
     const safeData = await getSafeData(permissionlessClient.account.address) // Fetch onchain data about the safe (owners and whether it was deployed)

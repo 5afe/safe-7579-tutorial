@@ -59,7 +59,7 @@ const SocialRecovery: React.FC<{
           address: SOCIAL_RECOVERY_ADDRESS,
           context: '0x'
         })
-        .catch(err => {
+        .catch((err: string) => {
           console.warn(err)
           return false
         })
