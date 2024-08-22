@@ -1,11 +1,10 @@
 import Safe from '@safe-global/protocol-kit'
-import { parseEther, encodeFunctionData, WalletClient } from 'viem'
+import { parseEther, encodeFunctionData } from 'viem'
 
 import { rpcUrl, bundlerClient, PermissionlessClient } from './permissionless'
 
 export const getSafeData = async (
   safeAddress: string,
-  signer: WalletClient
 ): Promise<{ isDeployed: boolean; owners: string[] }> => {
   const protocolKit = await Safe.init({
     provider: rpcUrl,
@@ -13,7 +12,7 @@ export const getSafeData = async (
     signer: window.ethereum.account,
     safeAddress
   }).catch(err => {
-    console.error(err)
+    console.warn(err)
   })
 
   if (!protocolKit) return { isDeployed: false, owners: [] }

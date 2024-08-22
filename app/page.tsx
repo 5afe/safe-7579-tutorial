@@ -1,18 +1,17 @@
 'use client'
 
 import { useState } from 'react'
-import { createWalletClient, custom } from 'viem'
+import { createWalletClient, custom, getAddress } from 'viem'
 import { sepolia } from 'viem/chains'
-import CircularProgress from '@mui/material/CircularProgress'
 
 import {
   getPermissionlessClient,
   WalletClientWithTransport,
   type PermissionlessClient
 } from '@/lib/permissionless'
-import { deploySafe, getSafeData } from '@/lib/safe'
 import SafeAccountDetails from '@/components/SafeAccountDetails'
 import SocialRecovery from '@/components/SocialRecovery'
+import { getSafeData } from '@/lib/safe'
 
 /**
  * This component is the main page of the app
@@ -28,6 +27,7 @@ export default function Home () {
   const [accounts, setAccounts] = useState<string[]>([])
   const [loading, setLoading] = useState(false)
   const [safeOwners, setSafeOwners] = useState<`0x${string}`[]>()
+  const [isDeployed, setIsDeployed] = useState(false)
 
   const handleConnectWallet = async () => {
     setLoading(true)
@@ -35,6 +35,9 @@ export default function Home () {
     const accounts = await window.ethereum.request({
       method: 'eth_requestAccounts'
     })
+
+    const checksummed = accounts.map((account: string) => getAddress(account))
+
     const walletClient = createWalletClient({
       account: accounts[0],
       chain: sepolia,
@@ -43,21 +46,13 @@ export default function Home () {
     }) as WalletClientWithTransport
 
     const permissionlessClient = await getPermissionlessClient(walletClient)
+    const safeData = await getSafeData(permissionlessClient.account.address)
 
-    const safeData = await getSafeData(
-      permissionlessClient.account.address,
-      walletClient
-    )
-    if (safeData.isDeployed === false) {
-      const txHash = await deploySafe(permissionlessClient)
-      console.log(
-        'Safe is being deployed: https://sepolia.etherscan.io/tx/' + txHash
-      )
-    }
-    setSafeOwners(safeData.owners as `0x${string}`[])
-    setAccounts(accounts)
+    setAccounts(checksummed)
     setWalletClient(walletClient)
     setPermissionlessClient(permissionlessClient)
+    setSafeOwners(safeData.owners as `0x${string}`[])
+    setIsDeployed(safeData.isDeployed)
     setLoading(false)
   }
 
@@ -70,22 +65,30 @@ export default function Home () {
             onClick={handleConnectWallet}
             style={{ marginTop: '40px' }}
           >
-            {loading ? (
-              <>
-                Loading...{' '}
-                <CircularProgress size='10px' sx={{ color: 'black' }} />
-              </>
-            ) : (
-              'Connect Wallet'
-            )}
+            {loading ? <>Loading...</> : 'Connect Wallet'}
           </button>
         </>
       ) : (
         <>
-          <SafeAccountDetails {...{ permissionlessClient, safeOwners }} />
-          <SocialRecovery
-            {...{ permissionlessClient, walletClient, accounts, setSafeOwners }}
+          <SafeAccountDetails
+            {...{
+              permissionlessClient,
+              safeOwners,
+              setSafeOwners,
+              setIsDeployed
+            }}
           />
+          {isDeployed ? (
+            <SocialRecovery
+              {...{
+                permissionlessClient,
+                walletClient,
+                accounts,
+                safeOwners,
+                setSafeOwners
+              }}
+            />
+          ) : null}
         </>
       )}
     </>

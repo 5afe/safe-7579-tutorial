@@ -1,6 +1,5 @@
 import { useEffect, useState } from 'react'
 import { SOCIAL_RECOVERY_ADDRESS } from '@rhinestone/module-sdk'
-import CircularProgress from '@mui/material/CircularProgress'
 
 import Guardian from '@/components/Guardian'
 import {
@@ -28,12 +27,19 @@ const SocialRecovery: React.FC<{
     React.SetStateAction<`0x${string}`[] | undefined>
   >
   accounts: string[]
-}> = ({ permissionlessClient, walletClient, setSafeOwners, accounts }) => {
+  safeOwners: `0x${string}`[] | undefined
+}> = ({
+  permissionlessClient,
+  walletClient,
+  safeOwners,
+  setSafeOwners,
+  accounts
+}) => {
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState(false)
   const [txHash, setTxHash] = useState('')
   const [guardians, setGuardians] = useState<`0x${string}`[]>(
-    accounts as `0x${string}`[]
+    accounts.slice(1) as `0x${string}`[]
   )
   const [userOp, setUserOp] = useState<UserOpRequest | null>(null)
   const [userOpHash, setUserOpHash] = useState<`0x${string}` | null>(null)
@@ -69,16 +75,11 @@ const SocialRecovery: React.FC<{
   useEffect(() => {
     const initRecovery = async () => {
       if (
-        permissionlessClient != null &&
-        walletClient != null &&
-        guardians[0] != null
+        guardians[0] != null &&
+        is7579Installed &&
+        !safeOwners?.includes(guardians[0])
       ) {
-        const userOp = await getUserOp(
-          walletClient,
-          permissionlessClient,
-          guardians[0]
-        )
-        console.log('hey')
+        const userOp = await getUserOp(permissionlessClient, guardians[0])
         setUserOp(userOp)
         setUserOpHash(getUserOpHash(userOp))
       }
@@ -94,7 +95,11 @@ const SocialRecovery: React.FC<{
           <>
             Social Recovery module is not installed, add at least{' '}
             <button
-              onClick={() => setThreshold(threshold - 1)}
+              onClick={() =>
+                setThreshold(threshold =>
+                  threshold > 1 ? threshold - 1 : threshold
+                )
+              }
               // sx={{ color: 'primary', minWidth: 0, mx: 0 }}
               style={{ padding: '0px 6px', margin: '0 4px 0 8px' }}
             >
@@ -160,13 +165,13 @@ const SocialRecovery: React.FC<{
       </div>
       {!is7579Installed ? (
         <button
-          disabled={guardians.length < threshold || loading}
+          disabled={threshold === 0 || guardians.length < threshold || loading}
           style={{ marginLeft: '10px' }}
           onClick={async () => {
             setLoading(true)
             setError(false)
             await install7579Module(permissionlessClient, {
-              guardians,
+              guardians: guardians.slice(0, threshold),
               threshold
             })
               .then(receipt => {
@@ -180,13 +185,7 @@ const SocialRecovery: React.FC<{
             setLoading(false)
           }}
         >
-          Enable Social Recovery
-          {loading ? (
-            <CircularProgress
-              size='8px'
-              sx={{ marginLeft: '4px', color: 'black' }}
-            />
-          ) : null}
+          {loading ? 'Enabling Social Recovery...' : 'Enable Social Recovery'}
         </button>
       ) : (
         <div style={{ display: 'flex' }}>
@@ -206,8 +205,7 @@ const SocialRecovery: React.FC<{
                 .then(async receipt => {
                   // refresh safe data
                   const safeData = await getSafeData(
-                    permissionlessClient.account.address,
-                    walletClient
+                    permissionlessClient.account.address
                   )
                   setSafeOwners(safeData.owners as `0x${string}`[])
 
@@ -224,13 +222,7 @@ const SocialRecovery: React.FC<{
               setLoading(false)
             }}
           >
-            Execute Recovery
-            {loading ? (
-              <CircularProgress
-                size='8px'
-                sx={{ marginLeft: '4px', color: 'black' }}
-              />
-            ) : null}
+            {loading ? 'Recovering Safe...' : 'Execute Recovery'}
           </button>
         </div>
       )}
