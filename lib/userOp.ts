@@ -21,6 +21,7 @@ export type UserOpRequest = Omit<
   'initCode' | 'paymasterAndData'
 >
 
+// Creates a user operation to add a new owner to the safe
 export const getUserOp = async (
   permissionlessClient: PermissionlessClient,
   newOwner: `0x${string}`
@@ -51,6 +52,7 @@ export const getUserOp = async (
   })
 }
 
+// Get the hash of the user operation so it can be signed by all the guardians
 export const getUserOpHash = (userOp: UserOpRequest) => {
   const packedData = encodeAbiParameters(
     [

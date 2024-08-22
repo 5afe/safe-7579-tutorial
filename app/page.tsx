@@ -15,7 +15,7 @@ import { getSafeData } from '@/lib/safe'
 
 /**
  * This component is the main page of the app
- * @returns React component that allows the user to create a safe and set guardians
+ * @returns React component that allows the user to connect their wallet and display the other components
  */
 export default function Home () {
   const [permissionlessClient, setPermissionlessClient] = useState<
@@ -32,22 +32,23 @@ export default function Home () {
   const handleConnectWallet = async () => {
     setLoading(true)
     // @ts-ignore
-    const accounts = await window.ethereum.request({
+    const accounts = await window.ethereum.request({ // Requests the accounts from the user's wallet (e.g. Metamask)
       method: 'eth_requestAccounts'
     })
 
     const checksummed = accounts.map((account: string) => getAddress(account))
 
-    const walletClient = createWalletClient({
+    const walletClient = createWalletClient({ // Creates the viem wallet client
       account: accounts[0],
       chain: sepolia,
       // @ts-ignore
       transport: custom(window.ethereum)
     }) as WalletClientWithTransport
 
-    const permissionlessClient = await getPermissionlessClient(walletClient)
-    const safeData = await getSafeData(permissionlessClient.account.address)
+    const permissionlessClient = await getPermissionlessClient(walletClient) // Creates the permissionless client
+    const safeData = await getSafeData(permissionlessClient.account.address) // Fetch onchain data about the safe (owners and whether it was deployed)
 
+    // Set the state variables
     setAccounts(checksummed)
     setWalletClient(walletClient)
     setPermissionlessClient(permissionlessClient)

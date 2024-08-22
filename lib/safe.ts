@@ -3,6 +3,7 @@ import { parseEther, encodeFunctionData } from 'viem'
 
 import { rpcUrl, bundlerClient, PermissionlessClient } from './permissionless'
 
+// Fetches onchain data about the safe (owners and whether it was deployed)
 export const getSafeData = async (
   safeAddress: string,
 ): Promise<{ isDeployed: boolean; owners: string[] }> => {
@@ -23,6 +24,7 @@ export const getSafeData = async (
 
 const NFT_ADDRESS = '0xBb9ebb7b8Ee75CDBf64e5cE124731A89c2BC4A07'
 
+// Deploys a Safe by sending a dummy transaction
 export const deploySafe = async (
   permissionlessClient: PermissionlessClient
 ) => {
@@ -72,6 +74,7 @@ export const deploySafe = async (
   })
 }
 
+// Generates a random number to be used as an NFT token ID
 function getRandomUint256 (): bigint {
   const dest = new Uint8Array(32) // Create a typed array capable of storing 32 bytes or 256 bits
 

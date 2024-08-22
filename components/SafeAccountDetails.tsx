@@ -6,7 +6,7 @@ import { PermissionlessClient } from '@/lib/permissionless'
 import { deploySafe, getSafeData } from '@/lib/safe'
 
 /**
- * This component displays information about the user's safe address and its current owners
+ * This component displays information about the user's safe address and its current owners. It also allows the user to deploy a safe if they don't have one yet.
  * @returns React Functional Component
  * @param permissionlessClient - The permissionless client
  * @param safeOwners - The current owners of the safe
@@ -27,9 +27,9 @@ const SafeAccountDetails: React.FC<{
     console.log(
       'Safe is being deployed: https://sepolia.etherscan.io/tx/' + txHash
     )
-    const safeData = await getSafeData(permissionlessClient.account.address)
+    const safeData = await getSafeData(permissionlessClient.account.address) // Fetch again onchain data about the safe
     setSafeOwners(safeData.owners as `0x${string}`[])
-    setIsDeployed(true)
+    setIsDeployed(safeData.isDeployed)
     setLoading(false)
   }
 

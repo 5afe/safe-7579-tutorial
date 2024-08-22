@@ -86,6 +86,51 @@ const SocialRecovery: React.FC<{
     }
     initRecovery()
   }, [permissionlessClient, guardians])
+
+  const handleEnableModule = async () => {
+    setLoading(true)
+    setError(false)
+    await install7579Module(permissionlessClient, {
+      guardians: guardians.slice(0, threshold),
+      threshold
+    })
+      .then(receipt => {
+        setTxHash(receipt.receipt.transactionHash)
+        setIs7579Installed(true)
+      })
+      .catch(err => {
+        console.error(err)
+        setError(true)
+      })
+    setLoading(false)
+  }
+
+  const handleExecuteRecovery = async () => {
+    setLoading(true)
+    setError(false)
+    await recoverSafe(
+      permissionlessClient,
+      userOp as UserOpRequest,
+      ...Object.values(signatures)
+    )
+      .then(async receipt => {
+        // refresh safe data
+        const safeData = await getSafeData(permissionlessClient.account.address)
+        setSafeOwners(safeData.owners as `0x${string}`[])
+
+        // reset state
+        setUserOp(null)
+        setUserOpHash(null)
+        setSignatures({})
+        setSuccess(true)
+      })
+      .catch(err => {
+        console.error(err)
+      })
+
+    setLoading(false)
+  }
+
   return (
     <>
       <div style={{ marginTop: '10px' }}>
@@ -100,7 +145,6 @@ const SocialRecovery: React.FC<{
                   threshold > 1 ? threshold - 1 : threshold
                 )
               }
-              // sx={{ color: 'primary', minWidth: 0, mx: 0 }}
               style={{ padding: '0px 6px', margin: '0 4px 0 8px' }}
             >
               -
@@ -109,7 +153,6 @@ const SocialRecovery: React.FC<{
             <button
               onClick={() => setThreshold(threshold + 1)}
               style={{ padding: '0px 4px', margin: '0 8px 0 4px' }}
-              // sx={{ color: 'primary', minWidth: 0, mx: 0 }}
             >
               +
             </button>{' '}
@@ -167,23 +210,7 @@ const SocialRecovery: React.FC<{
         <button
           disabled={threshold === 0 || guardians.length < threshold || loading}
           style={{ marginLeft: '10px' }}
-          onClick={async () => {
-            setLoading(true)
-            setError(false)
-            await install7579Module(permissionlessClient, {
-              guardians: guardians.slice(0, threshold),
-              threshold
-            })
-              .then(receipt => {
-                setTxHash(receipt.receipt.transactionHash)
-                setIs7579Installed(true)
-              })
-              .catch(err => {
-                console.error(err)
-                setError(true)
-              })
-            setLoading(false)
-          }}
+          onClick={handleEnableModule}
         >
           {loading ? 'Enabling Social Recovery...' : 'Enable Social Recovery'}
         </button>
@@ -194,33 +221,7 @@ const SocialRecovery: React.FC<{
               Object.keys(signatures).length < threshold || !userOp || loading
             }
             style={{ marginLeft: '10px' }}
-            onClick={async () => {
-              setLoading(true)
-              setError(false)
-              await recoverSafe(
-                permissionlessClient,
-                userOp as UserOpRequest,
-                ...Object.values(signatures)
-              )
-                .then(async receipt => {
-                  // refresh safe data
-                  const safeData = await getSafeData(
-                    permissionlessClient.account.address
-                  )
-                  setSafeOwners(safeData.owners as `0x${string}`[])
-
-                  // reset state
-                  setUserOp(null)
-                  setUserOpHash(null)
-                  setSignatures({})
-                  setSuccess(true)
-                })
-                .catch(err => {
-                  console.error(err)
-                })
-
-              setLoading(false)
-            }}
+            onClick={handleExecuteRecovery}
           >
             {loading ? 'Recovering Safe...' : 'Execute Recovery'}
           </button>

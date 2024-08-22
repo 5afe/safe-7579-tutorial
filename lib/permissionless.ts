@@ -1,5 +1,4 @@
 import {
-  Hex,
   createPublicClient,
   http,
   Chain,
@@ -7,14 +6,12 @@ import {
   WalletClient,
   Account
 } from 'viem'
-import { generatePrivateKey, privateKeyToAccount } from 'viem/accounts'
 import { sepolia } from 'viem/chains'
 import {
   ENTRYPOINT_ADDRESS_V07,
   createSmartAccountClient,
   SmartAccountClient,
-  walletClientToSmartAccountSigner,
-  providerToSmartAccountSigner
+  walletClientToSmartAccountSigner
 } from 'permissionless'
 import {
   SafeSmartAccount,
@@ -56,11 +53,12 @@ export const bundlerClient = createPimlicoBundlerClient({
   entryPoint: ENTRYPOINT_ADDRESS_V07
 })
 
-export const getPermissionlessAccount = async (
+// Initializes a permissionless client from a viem wallet client
+export const getPermissionlessClient = async (
   walletClient: WalletClientWithTransport
 ) => {
   const signer = walletClientToSmartAccountSigner(walletClient)
-  const permissionlessAccount = signerToSafeSmartAccount(publicClient, {
+  const permissionlessAccount = await signerToSafeSmartAccount(publicClient, {
     entryPoint: ENTRYPOINT_ADDRESS_V07,
     signer,
     safeVersion: '1.4.1',
@@ -69,16 +67,9 @@ export const getPermissionlessAccount = async (
     erc7569LaunchpadAddress
   })
 
-  return permissionlessAccount
-}
-export const getPermissionlessClient = async (
-  walletClient: WalletClientWithTransport
-) => {
-  const account = await getPermissionlessAccount(walletClient)
-
   const permissionlessClient = createSmartAccountClient({
     chain: sepolia,
-    account,
+    account: permissionlessAccount,
     bundlerTransport: http(pimlicoUrl),
     middleware: {
       gasPrice: async () =>
