@@ -88,7 +88,8 @@ export default function Home () {
               permissionlessClient,
               safeOwners,
               setSafeOwners,
-              setIsDeployed
+              setIsDeployed,
+              accounts
             }}
           />
           {isDeployed ? (

@@ -1,17 +1,18 @@
-import Safe from '@safe-global/protocol-kit'
-import { parseEther, encodeFunctionData, SendTransactionParameters } from 'viem'
+import Safe, {
+  EthSafeSignature,
+  EthSafeTransaction
+} from '@safe-global/protocol-kit'
 
-import { rpcUrl, bundlerClient, PermissionlessClient } from './permissionless'
-import { sepolia } from 'viem/chains'
+import { bundlerClient, PermissionlessClient } from './permissionless'
+import { Transaction } from 'viem'
 
 // Fetches onchain data about the safe (owners and whether it was deployed)
 export const getSafeData = async (
   safeAddress: string
 ): Promise<{ isDeployed: boolean; owners: string[] }> => {
   const protocolKit = await Safe.init({
-    provider: rpcUrl,
     // @ts-ignore
-    signer: window.ethereum.account,
+    provider: window.ethereum,
     safeAddress
   }).catch(err => {
     console.warn(err)
@@ -23,49 +24,33 @@ export const getSafeData = async (
   return { isDeployed, owners }
 }
 
-const NFT_ADDRESS = '0xBb9ebb7b8Ee75CDBf64e5cE124731A89c2BC4A07'
-
 // Deploys a Safe by sending a dummy transaction
 export const deploySafe = async (
-  permissionlessClient: PermissionlessClient
+  permissionlessClient: PermissionlessClient,
+  accounts: string[]
 ) => {
-  // To deploy the Safe we will simply send a dummy transaction.
-  // Her we mint an NFT, but any transaction would work:
-  const nftTransaction = {
-    to: NFT_ADDRESS,
-    value: parseEther('0'),
-    data: encodeFunctionData({
-      abi: [
-        {
-          constant: false,
-          inputs: [
-            {
-              name: 'to',
-              type: 'address'
-            },
-            {
-              name: 'tokenId',
-              type: 'uint256'
-            }
-          ],
-          name: 'safeMint',
-          payable: false,
-          stateMutability: 'nonpayable',
-          type: 'function'
-        }
-      ],
-      functionName: 'safeMint',
-      args: [permissionlessClient.account.address, getRandomUint256()]
-    })
+  const dummyTransaction = {
+    to: permissionlessClient.account.address,
+    value: '0',
+    data: '0x' as `0x${string}`
   }
 
-  const txHash = await permissionlessClient
-    .sendTransaction(nftTransaction as SendTransactionParameters)
-    .catch((err: string) => {
-      console.error(err)
-    })
+  const { signature, safeTransaction } = await signTransaction(
+    dummyTransaction,
+    accounts[0]
+  )
 
-  if (!txHash) return
+  const txHash = await permissionlessClient.sendUserOperation({
+    account: permissionlessClient.account,
+    userOperation: {
+      sender: permissionlessClient.account.address,
+      callData: safeTransaction.data.data as `0x${string}`,
+      paymasterData: '0x',
+      signature: signature.data as `0x${string}`
+    }
+  })
+
+  if (txHash == undefined) return
   console.info(
     'Safe is being deployed: https://jiffyscan.xyz/userOpHash/' + txHash
   )
@@ -75,16 +60,36 @@ export const deploySafe = async (
   })
 }
 
-// Generates a random number to be used as an NFT token ID
-function getRandomUint256 (): bigint {
-  const dest = new Uint8Array(32) // Create a typed array capable of storing 32 bytes or 256 bits
+const signTransaction = async (
+  transaction: {
+    to: `0x${string}`
+    value: string
+    data: `0x${string}`
+  },
+  account: string
+): Promise<{
+  signature: EthSafeSignature
+  safeTransaction: EthSafeTransaction
+}> => {
+  const protocolKit = await Safe.init({
+    // @ts-ignore
+    provider: window.ethereum,
+    // @ts-ignore
+    signer: accounts[0],
+    predictedSafe: {
+      safeAccountConfig: {
+        // @ts-ignore
+        owners: [accounts[0]],
+        threshold: 1
+      }
+    }
+  })
 
-  crypto.getRandomValues(dest) // Fill the typed array with cryptographically secure random values
+  let safeTransaction = await protocolKit.createTransaction({
+    transactions: [transaction]
+  })
+  safeTransaction = await protocolKit.signTransaction(safeTransaction)
 
-  let result = 0n
-  for (let i = 0; i < dest.length; i++) {
-    result |= BigInt(dest[i]) << BigInt(8 * i) // Combine individual bytes into one bigint
-  }
-
-  return result
+  const signature = safeTransaction.getSignature(account) as EthSafeSignature
+  return { safeTransaction, signature }
 }

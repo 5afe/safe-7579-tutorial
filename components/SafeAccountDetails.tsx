@@ -18,12 +18,19 @@ const SafeAccountDetails: React.FC<{
     React.SetStateAction<`0x${string}`[] | undefined>
   >
   setIsDeployed: React.Dispatch<React.SetStateAction<boolean>>
-}> = ({ permissionlessClient, safeOwners, setSafeOwners, setIsDeployed }) => {
+  accounts: string[]
+}> = ({
+  permissionlessClient,
+  safeOwners,
+  setSafeOwners,
+  setIsDeployed,
+  accounts
+}) => {
   const [loading, setLoading] = useState(false)
 
   const handleDeploySafe = async () => {
     setLoading(true)
-    const txHash = await deploySafe(permissionlessClient)
+    const txHash = await deploySafe(permissionlessClient, accounts)
     console.log(
       'Safe is being deployed: https://sepolia.etherscan.io/tx/' + txHash
     )
