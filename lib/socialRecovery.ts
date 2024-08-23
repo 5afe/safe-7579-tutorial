@@ -5,7 +5,7 @@ import {
   getSocialRecoveryValidator,
   getSocialRecoveryGuardians,
   getAccount,
-  SOCIAL_RECOVERY_ADDRESS
+  installModule
 } from '@rhinestone/module-sdk'
 
 import {
@@ -13,6 +13,7 @@ import {
   PermissionlessClient,
   publicClient
 } from './permissionless'
+import { signTransactions } from './safe'
 export interface SocialRecoveryDataInput {
   guardians: `0x${string}`[]
   threshold: number
@@ -25,16 +26,39 @@ export type UserOpRequest = Omit<
 
 // Installs the Social Recovery module on the safe
 export const install7579Module = async (
-  safe: PermissionlessClient,
-  socialRecoveryInput: SocialRecoveryDataInput
+  permissionlessClient: PermissionlessClient,
+  socialRecoveryInput: SocialRecoveryDataInput,
+  accounts: string[]
 ) => {
   const socialRecoveryValidator =
     getSocialRecoveryValidator(socialRecoveryInput)
 
-  const txHash = await safe.installModule({
-    type: 'validator',
-    address: SOCIAL_RECOVERY_ADDRESS,
-    context: socialRecoveryValidator.initData as `0x${string}`
+  const moduleExecution = await installModule({
+    client: publicClient,
+    module: socialRecoveryValidator,
+    account: getAccount({
+      address: permissionlessClient.account.address,
+      type: 'safe'
+    })
+  })
+  const installModuleTransactions = moduleExecution.map(execution => ({
+    to: execution.target,
+    value: execution.value.toString(),
+    data: execution.callData
+  }))
+
+  const { safeTransaction, signature } = await signTransactions(
+    installModuleTransactions,
+    accounts[0]
+  )
+
+  const txHash = await permissionlessClient.sendUserOperation({
+    account: permissionlessClient.account,
+    userOperation: {
+      sender: permissionlessClient.account.address,
+      callData: safeTransaction.data.data as `0x${string}`,
+      signature: signature.data as `0x${string}`
+    }
   })
 
   console.log(
@@ -50,8 +74,13 @@ export const install7579Module = async (
 }
 
 // Gets the guardians of the safe
-export const getGuardians = async (safe: PermissionlessClient) => {
-  const account = getAccount({ address: safe.account.address, type: 'safe' })
+export const getGuardians = async (
+  permissionlessClient: PermissionlessClient
+) => {
+  const account = getAccount({
+    address: permissionlessClient.account.address,
+    type: 'safe'
+  })
   const guardians = (await getSocialRecoveryGuardians({
     account,
     client: publicClient
@@ -61,11 +90,11 @@ export const getGuardians = async (safe: PermissionlessClient) => {
 
 // Recovers the safe by adding the first guardian as a new owner of the safe
 export const recoverSafe = async (
-  safe: PermissionlessClient,
+  permissionless: PermissionlessClient,
   userOp: UserOpRequest,
   ...signatures: `0x${string}`[]
 ) => {
-  const txHash = await safe.sendUserOperation({
+  const txHash = await permissionless.sendUserOperation({
     userOperation: {
       ...userOp,
       signature: concat(signatures)

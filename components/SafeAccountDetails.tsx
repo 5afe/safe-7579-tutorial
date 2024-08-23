@@ -30,9 +30,9 @@ const SafeAccountDetails: React.FC<{
 
   const handleDeploySafe = async () => {
     setLoading(true)
-    const txHash = await deploySafe(permissionlessClient, accounts)
+    const receipt = await deploySafe(permissionlessClient, accounts)
     console.log(
-      'Safe is being deployed: https://sepolia.etherscan.io/tx/' + txHash
+      'Deployment transaction: https://sepolia.etherscan.io/tx/' + receipt?.receipt?.transactionHash
     )
     const safeData = await getSafeData(permissionlessClient.account.address) // Fetch again onchain data about the safe
     setSafeOwners(safeData.owners as `0x${string}`[])

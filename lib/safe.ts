@@ -4,7 +4,6 @@ import Safe, {
 } from '@safe-global/protocol-kit'
 
 import { bundlerClient, PermissionlessClient } from './permissionless'
-import { Transaction } from 'viem'
 
 // Fetches onchain data about the safe (owners and whether it was deployed)
 export const getSafeData = async (
@@ -35,8 +34,8 @@ export const deploySafe = async (
     data: '0x' as `0x${string}`
   }
 
-  const { signature, safeTransaction } = await signTransaction(
-    dummyTransaction,
+  const { signature, safeTransaction } = await signTransactions(
+    [dummyTransaction],
     accounts[0]
   )
 
@@ -45,7 +44,6 @@ export const deploySafe = async (
     userOperation: {
       sender: permissionlessClient.account.address,
       callData: safeTransaction.data.data as `0x${string}`,
-      paymasterData: '0x',
       signature: signature.data as `0x${string}`
     }
   })
@@ -60,12 +58,12 @@ export const deploySafe = async (
   })
 }
 
-const signTransaction = async (
-  transaction: {
+export const signTransactions = async (
+  transactions: Array<{
     to: `0x${string}`
     value: string
     data: `0x${string}`
-  },
+  }>,
   account: string
 ): Promise<{
   signature: EthSafeSignature
@@ -75,18 +73,18 @@ const signTransaction = async (
     // @ts-ignore
     provider: window.ethereum,
     // @ts-ignore
-    signer: accounts[0],
+    signer: account,
     predictedSafe: {
       safeAccountConfig: {
         // @ts-ignore
-        owners: [accounts[0]],
+        owners: [account],
         threshold: 1
       }
     }
   })
 
   let safeTransaction = await protocolKit.createTransaction({
-    transactions: [transaction]
+    transactions
   })
   safeTransaction = await protocolKit.signTransaction(safeTransaction)
 

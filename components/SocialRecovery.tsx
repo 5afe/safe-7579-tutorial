@@ -91,10 +91,14 @@ const SocialRecovery: React.FC<{
   const handleEnableModule = async () => {
     setLoading(true)
     setError(false)
-    await install7579Module(permissionlessClient, {
-      guardians: guardians.slice(0, threshold),
-      threshold
-    })
+    await install7579Module(
+      permissionlessClient,
+      {
+        guardians: guardians.slice(0, threshold),
+        threshold
+      },
+      accounts
+    )
       .then(receipt => {
         setTxHash(receipt.receipt.transactionHash)
         setIs7579Installed(true)
