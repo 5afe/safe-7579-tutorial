@@ -1,95 +1,60 @@
-import Image from "next/image";
-import styles from "./page.module.css";
+'use client'
 
-export default function Home() {
+import { createSmartAccountClient } from 'permissionless'
+import { sepolia } from 'viem/chains'
+import { encodePacked, http, encodeFunctionData, parseAbi } from 'viem'
+import { erc7579Actions } from 'permissionless/actions/erc7579'
+import { createPublicClient, createWalletClient } from 'viem'
+import { privateKeyToAccount } from 'viem/accounts'
+import { createPimlicoClient } from 'permissionless/clients/pimlico'
+import { entryPoint07Address } from 'viem/account-abstraction'
+import { toSafeSmartAccount } from 'permissionless/accounts'
+import { useEffect, useState } from 'react'
+
+export default function Home () {
+  const [publicClient, setPublicClient] = useState(null)
+  const [safeAccount, setSafeAccount] = useState(null)
+  const [pimlicoClient, setPimlicoClient] = useState(null)
+  const [smartAccountClient, setSmartAccountClient] = useState(null)
+
+  // The module we will use is deployed as a smart contract on Sepolia:
+  const ownableExecutorModule = '0xc98B026383885F41d9a995f85FC480E9bb8bB891'
+
+  //  Make sure to add your own API key to the Pimlico URL:
+  const pimlicoUrl =
+    'https://api.pimlico.io/v2/sepolia/rpc?apikey=YOUR_PIMLICO_API_KEY'
+
+  // We will use two accounts for this example:
+  // owner is the account that owns the smart account and will install the module.
+  // owner2 is the account that will be added as an owner to the smart account via the module.
+  // Both accounts are created from private keys. Make sure to replace them with your own private keys.
+  const owner = privateKeyToAccount(
+    '0xac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80'
+  )
+
+  const owner2 = privateKeyToAccount(
+    '0x59c6995e998f97a5a0044966f0945389dc9e86dae88c7a8412f4603b6b78690d'
+  )
+
+  // These functions will be filled with code in the following steps:
+
+  useEffect(() => {
+    const init = async () => {}
+    init()
+  }, [])
+
+  const installModule = async () => {}
+
+  const addOwner = async () => {}
+
+  const executeOnOwnedAccount = async () => {}
+
   return (
-    <div className={styles.page}>
-      <main className={styles.main}>
-        <Image
-          className={styles.logo}
-          src="https://nextjs.org/icons/next.svg"
-          alt="Next.js logo"
-          width={180}
-          height={38}
-          priority
-        />
-        <ol>
-          <li>
-            Get started by editing <code>app/page.tsx</code>.
-          </li>
-          <li>Save and see your changes instantly.</li>
-        </ol>
-
-        <div className={styles.ctas}>
-          <a
-            className={styles.primary}
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className={styles.logo}
-              src="https://nextjs.org/icons/vercel.svg"
-              alt="Vercel logomark"
-              width={20}
-              height={20}
-            />
-            Deploy now
-          </a>
-          <a
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-            className={styles.secondary}
-          >
-            Read our docs
-          </a>
-        </div>
-      </main>
-      <footer className={styles.footer}>
-        <a
-          href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="https://nextjs.org/icons/file.svg"
-            alt="File icon"
-            width={16}
-            height={16}
-          />
-          Learn
-        </a>
-        <a
-          href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="https://nextjs.org/icons/window.svg"
-            alt="Window icon"
-            width={16}
-            height={16}
-          />
-          Examples
-        </a>
-        <a
-          href="https://nextjs.org?utm_source=create-next-app&utm_medium=appdir-template&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="https://nextjs.org/icons/globe.svg"
-            alt="Globe icon"
-            width={16}
-            height={16}
-          />
-          Go to nextjs.org →
-        </a>
-      </footer>
+    <div className='card'>
+      <div className='title'>Safe 7579 Module</div>
+      <button onClick={installModule}>Install Module</button>
+      <button onClick={executeOnOwnedAccount}>Execute as Owner</button>
+      <button onClick={addOwner}>Add Owner</button>
     </div>
-  );
+  )
 }
