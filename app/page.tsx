@@ -39,11 +39,81 @@ export default function Home () {
   // These functions will be filled with code in the following steps:
 
   useEffect(() => {
-    const init = async () => {}
+    const init = async () => {
+      // The public client by viem is used as a transport layer:
+      const publicClient = createPublicClient({
+        transport: http('https://rpc.ankr.com/eth_sepolia'),
+        chain: sepolia
+      })
+
+      // The safe account is created using the public client:
+      const safeAccount = await toSafeSmartAccount({
+        client: publicClient,
+        owners: [owner],
+        version: '1.4.1',
+        chain: sepolia,
+        // These modules are required for the 7579 functionality:
+        safe4337ModuleAddress: '0x3Fdb5BC686e861480ef99A6E3FaAe03c0b9F32e2', // These are not meant to be used in production as of now.
+        erc7579LaunchpadAddress: '0xEBe001b3D534B9B6E2500FB78E67a1A137f561CE' // These are not meant to be used in production as of now.
+      })
+
+      // The Pimlico client is used as a paymaster:
+      const pimlicoClient = createPimlicoClient({
+        transport: http(
+          'https://api.pimlico.io/v2/sepolia/rpc?apikey=pim_nP3hDrTjXZjYyK34ZgugCk'
+        ),
+        chain: sepolia
+      })
+
+      // Finally, we create the smart account client, which provides functionality to interact with the smart account:
+      const smartAccountClient = createSmartAccountClient({
+        account: safeAccount,
+        chain: sepolia,
+        bundlerTransport: http(
+          'https://api.pimlico.io/v2/sepolia/rpc?apikey=pim_nP3hDrTjXZjYyK34ZgugCk'
+        ),
+        paymaster: pimlicoClient,
+        userOperation: {
+          estimateFeesPerGas: async () => {
+            return (await pimlicoClient.getUserOperationGasPrice()).fast
+          }
+        }
+      }).extend(erc7579Actions())
+
+      // We store the clients in the state to use them in the following steps:
+      setPublicClient(publicClient)
+      setSafeAccount(safeAccount)
+      setPimlicoClient(pimlicoClient)
+      setSmartAccountClient(smartAccountClient)
+
+      console.log('setup done')
+    }
+
     init()
   }, [])
 
-  const installModule = async () => {}
+  const installModule = async () => {
+    console.log('Installing module...')
+
+    // The smart accounts client operates on 4337. It does not send transactions directly but instead creates user
+    // operations. The Pimlico bundler takes those user operations and sends them to the blockchain as regular
+    // transactions. We also use the Pimlico paymaster to sponsor the transaction. So, all interactions are free
+    // on Sepolia.
+    const userOpHash = await smartAccountClient.installModule({
+      type: 'executor',
+      address: ownableExecutorModule,
+      context: encodePacked(['address'], [owner2.address])
+    })
+
+    console.log('User operation hash:', userOpHash, '\nwaiting for receipt...')
+
+    // After we sent the user operation, we wait for the transaction to be settled:
+    const transactionReceipt = await pimlicoClient.waitForUserOperationReceipt({
+      hash: userOpHash
+    })
+
+    console.log('Module installed:', transactionReceipt)
+  }
 
   const addOwner = async () => {}
 
