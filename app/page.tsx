@@ -7,12 +7,10 @@ import { erc7579Actions } from 'permissionless/actions/erc7579'
 import { createPublicClient, createWalletClient } from 'viem'
 import { privateKeyToAccount } from 'viem/accounts'
 import { createPimlicoClient } from 'permissionless/clients/pimlico'
-import { entryPoint07Address } from 'viem/account-abstraction'
 import { toSafeSmartAccount } from 'permissionless/accounts'
 import { useEffect, useState } from 'react'
 
 export default function Home () {
-  const [publicClient, setPublicClient] = useState(null)
   const [safeAccount, setSafeAccount] = useState(null)
   const [pimlicoClient, setPimlicoClient] = useState(null)
   const [smartAccountClient, setSmartAccountClient] = useState(null)
@@ -28,6 +26,7 @@ export default function Home () {
   // owner is the account that owns the smart account and will install the module.
   // owner2 is the account that will be added as an owner to the smart account via the module.
   // Both accounts are created from private keys. Make sure to replace them with your own private keys.
+  // These are the private keys of anvil, don't use them in production, don't send any real funds to these accounts.
   const owner = privateKeyToAccount(
     '0xac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80'
   )
@@ -59,9 +58,7 @@ export default function Home () {
 
       // The Pimlico client is used as a paymaster:
       const pimlicoClient = createPimlicoClient({
-        transport: http(
-          'https://api.pimlico.io/v2/sepolia/rpc?apikey=pim_nP3hDrTjXZjYyK34ZgugCk'
-        ),
+        transport: http(pimlicoUrl),
         chain: sepolia
       })
 
@@ -69,9 +66,7 @@ export default function Home () {
       const smartAccountClient = createSmartAccountClient({
         account: safeAccount,
         chain: sepolia,
-        bundlerTransport: http(
-          'https://api.pimlico.io/v2/sepolia/rpc?apikey=pim_nP3hDrTjXZjYyK34ZgugCk'
-        ),
+        bundlerTransport: http(pimlicoUrl),
         paymaster: pimlicoClient,
         userOperation: {
           estimateFeesPerGas: async () => {
