@@ -115,15 +115,49 @@ export default function Home () {
     console.log('Module installed:', transactionReceipt)
   }
 
-  const addOwner = async () => {}
+  const executeOnOwnedAccount = async () => {
+    console.log('Executing on owned account...')
 
-  const executeOnOwnedAccount = async () => {}
+    // We create a wallet client for the owner2 account. This client is used to send transactions on behalf of the
+    // owner2. This transaction is sent as a regular transaction, so it is not free. Make sure owner2 owns enough funds
+    // to pay for gas.
+    const walletClient = createWalletClient({
+      account: owner2,
+      transport: http('https://rpc.ankr.com/eth_sepolia'),
+      chain: sepolia
+    })
+
+    console.log('wallet client', walletClient)
+
+    // We encode the transaction we want the smart account to send. The fields are:
+    // - to (address)
+    // - value (uint256)
+    // - data (bytes)
+    // In this example case, it is a dummy transaction with zero data.
+    const executeOnOwnedAccountData = encodePacked(
+      ['address', 'uint256', 'bytes'],
+      ['0xa6d3DEBAAB2B8093e69109f23A75501F864F74e2', 0n, '0x']
+    )
+
+    // Now, we call the `executeOnOwnedAccount` function of the `ownableExecutorModule` with the address of the safe
+    // account and the data we want to execute. This will make our smart account send the transaction that is encoded above.
+    const hash = await walletClient.writeContract({
+      abi: parseAbi(['function executeOnOwnedAccount(address, bytes)']),
+      functionName: 'executeOnOwnedAccount',
+      args: [safeAccount?.address, executeOnOwnedAccountData],
+      address: ownableExecutorModule
+    })
+
+    console.log('Executed on owned account, transaction hash:', hash)
+  }
+
+  const addOwner = async () => {}
 
   return (
     <div className='card'>
       <div className='title'>Safe 7579 Module</div>
       <button onClick={installModule}>Install Module</button>
-      <button onClick={executeOnOwnedAccount}>Execute as Owner</button>
+      <button onClick={executeOnOwnedAccount}>Execute on owned account</button>
       <button onClick={addOwner}>Add Owner</button>
     </div>
   )
