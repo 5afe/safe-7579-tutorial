@@ -151,7 +151,31 @@ export default function Home () {
     console.log('Executed on owned account, transaction hash:', hash)
   }
 
-  const addOwner = async () => {}
+  const addOwner = async () => {
+    console.log('Adding owner...')
+
+    // The addOwner function is part of the OwnableExecutorModule. We encode the function data using the viem library:
+    const addOwnerData = encodeFunctionData({
+      abi: parseAbi(['function addOwner(address)']),
+      functionName: 'addOwner',
+      args: ['0x90F79bf6EB2c4f870365E785982E1f101E93b906']
+    })
+
+    // We use the smart account client to send the user operation: In this call, our smart account calls the `addOwner`
+    // function at the `ownableExecutorModule` with the new owner's address.
+    const userOp = await smartAccountClient.sendUserOperation({
+      calls: [{ to: ownableExecutorModule, value: 0, data: addOwnerData }]
+    })
+
+    console.log('User operation:', userOp, '\nwaiting for tx receipt...')
+
+    // Again, we wait for the transaction to be settled:
+    const receipt = await pimlicoClient.waitForUserOperationReceipt({
+      hash: userOp
+    })
+
+    console.log('Owner added, tx receipt:', receipt)
+  }
 
   return (
     <div className='card'>
