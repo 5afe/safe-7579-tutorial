@@ -76,7 +76,6 @@ export default function Home () {
       }).extend(erc7579Actions())
 
       // We store the clients in the state to use them in the following steps:
-      setPublicClient(publicClient)
       setSafeAccount(safeAccount)
       setPimlicoClient(pimlicoClient)
       setSmartAccountClient(smartAccountClient)
