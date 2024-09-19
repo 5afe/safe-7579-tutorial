@@ -17,7 +17,7 @@ import { erc7579Actions } from 'permissionless/actions/erc7579'
 import { privateKeyToAccount } from 'viem/accounts'
 import { createPimlicoClient } from 'permissionless/clients/pimlico'
 import { toSafeSmartAccount } from 'permissionless/accounts'
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 
 export default function Home () {
   const [safeAccount, setSafeAccount] = useState(null)
@@ -58,6 +58,19 @@ export default function Home () {
 
   // These functions will be filled with code in the following steps:
 
+  const checkAddresses = async () => {
+    const addresses = await walletClient.getAddresses()
+    setOwnerAddress(addresses[0])
+    setExecutorAddress(addresses[1])
+    if (addresses.length >= 2) {
+      init()
+    }
+  }
+
+  useEffect(() => {
+    checkAddresses()
+  }, [])
+
   const init = async () => {
     // The public client is required for the safe account creation:
     const publicClient = createPublicClient({
@@ -92,6 +105,14 @@ export default function Home () {
       }
     }).extend(erc7579Actions())
 
+    const isModuleInstalled = await smartAccountClient.isModuleInstalled({
+      address: ownableExecutorModule,
+      type: 'executor',
+      context: '0x'
+    })
+
+    setIsModuleInstalled(isModuleInstalled)
+
     // We store the clients in the state to use them in the following steps:
     setSafeAccount(safeAccount)
     setSmartAccountClient(smartAccountClient)
@@ -100,14 +121,8 @@ export default function Home () {
   }
 
   const connectWallets = async () => {
-    const addresses = await walletClient.requestAddresses()
-    console.log('Connected wallets:', addresses)
-    setOwnerAddress(addresses[0])
-    setExecutorAddress(addresses[1])
-
-    if (addresses.length >= 2) {
-      init()
-    }
+    await walletClient.requestAddresses()
+    checkAddresses()
   }
 
   const installModule = async () => {
@@ -237,6 +252,25 @@ export default function Home () {
           MetaMask and reconnect both accounts.
         </div>
         <button onClick={connectWallets}>Connect Wallet</button>
+      </div>
+    )
+  }
+
+  if (!isModuleInstalled) {
+    return (
+      <div className='card'>
+        <div className='title'>Install Module</div>
+        <div>
+          Your Safe has the address {safeAddress} and is{' '}
+          {isSafeDeployed ? 'deployed' : 'not yet deployed'}.
+          {!isSafeDeployed &&
+            'It will be deployed with your first transaction, when you install the module.'}
+        </div>
+        <div>
+          You can now install the module. MetaMask will ask you to sign a
+          message after clicking the button.
+        </div>
+        <button onClick={installModule}>Install Module</button>
       </div>
     )
   }
