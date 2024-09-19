@@ -17,19 +17,35 @@ import { erc7579Actions } from 'permissionless/actions/erc7579'
 import { privateKeyToAccount } from 'viem/accounts'
 import { createPimlicoClient } from 'permissionless/clients/pimlico'
 import { toSafeSmartAccount } from 'permissionless/accounts'
-import { useEffect, useState } from 'react'
+import { useState } from 'react'
 
 export default function Home () {
   const [safeAccount, setSafeAccount] = useState(null)
-  const [pimlicoClient, setPimlicoClient] = useState(null)
   const [smartAccountClient, setSmartAccountClient] = useState(null)
+  const [ownerAddress, setOwnerAddress] = useState<string | null>(null)
+  const [executorAddress, setExecutorAddress] = useState<string | null>(null)
+  const [safeAddress, setSafeAddress] = useState<string | null>(null)
+  const [isSafeDeployed, setIsSafeDeployed] = useState(false)
+  const [isModuleInstalled, setIsModuleInstalled] = useState(false)
 
   // The module we will use is deployed as a smart contract on Sepolia:
   const ownableExecutorModule = '0xc98B026383885F41d9a995f85FC480E9bb8bB891'
 
+  // We create a wallet client to connect to MetaMask:
+  const walletClient = createWalletClient({
+    chain: sepolia,
+    transport: custom(window.ethereum!)
+  })
+
   //  Make sure to add your own API key to the Pimlico URL:
   const pimlicoUrl =
     'https://api.pimlico.io/v2/sepolia/rpc?apikey=pim_nP3hDrTjXZjYyK34ZgugCk'
+
+  // The Pimlico client is used as a paymaster:
+  const pimlicoClient = createPimlicoClient({
+    transport: http(pimlicoUrl),
+    chain: sepolia
+  })
 
   // We will use two accounts for this example:
   // owner2 is the account that will be added as an owner to the smart account via the module.
@@ -42,62 +58,57 @@ export default function Home () {
 
   // These functions will be filled with code in the following steps:
 
-  useEffect(() => {
-    const init = async () => {
-      // We create a wallet client to sign the messages with MetaMask:
-      const walletClient = createWalletClient({
-        chain: sepolia,
-        transport: custom(window.ethereum!)
-      })
+  const init = async () => {
+    // The public client is required for the safe account creation:
+    const publicClient = createPublicClient({
+      transport: http('https://rpc.ankr.com/eth_sepolia'),
+      chain: sepolia
+    })
 
-      // The public client is required for the safe account creation:
-      const publicClient = createPublicClient({
-        transport: http('https://rpc.ankr.com/eth_sepolia'),
-        chain: sepolia
-      })
+    // The safe account is created using the public client:
+    const safeAccount = await toSafeSmartAccount({
+      client: publicClient,
+      owners: [walletClient],
+      version: '1.4.1',
+      chain: sepolia,
+      // These modules are required for the 7579 functionality:
+      safe4337ModuleAddress: '0x3Fdb5BC686e861480ef99A6E3FaAe03c0b9F32e2', // These are not meant to be used in production as of now.
+      erc7579LaunchpadAddress: '0xEBe001b3D534B9B6E2500FB78E67a1A137f561CE' // These are not meant to be used in production as of now.
+    })
 
-      // The safe account is created using the public client:
-      const safeAccount = await toSafeSmartAccount({
-        client: publicClient,
-        owners: [walletClient],
-        version: '1.4.1',
-        chain: sepolia,
-        // These modules are required for the 7579 functionality:
-        safe4337ModuleAddress: '0x3Fdb5BC686e861480ef99A6E3FaAe03c0b9F32e2', // These are not meant to be used in production as of now.
-        erc7579LaunchpadAddress: '0xEBe001b3D534B9B6E2500FB78E67a1A137f561CE' // These are not meant to be used in production as of now.
-      })
+    setSafeAddress(safeAccount.address)
+    setIsSafeDeployed(await safeAccount.isDeployed())
 
-      console.log('safe smart account address', safeAccount.address)
-
-      // The Pimlico client is used as a paymaster:
-      const pimlicoClient = createPimlicoClient({
-        transport: http(pimlicoUrl),
-        chain: sepolia
-      })
-
-      // Finally, we create the smart account client, which provides functionality to interact with the smart account:
-      const smartAccountClient = createSmartAccountClient({
-        account: safeAccount,
-        chain: sepolia,
-        bundlerTransport: http(pimlicoUrl),
-        paymaster: pimlicoClient,
-        userOperation: {
-          estimateFeesPerGas: async () => {
-            return (await pimlicoClient.getUserOperationGasPrice()).fast
-          }
+    // Finally, we create the smart account client, which provides functionality to interact with the smart account:
+    const smartAccountClient = createSmartAccountClient({
+      account: safeAccount,
+      chain: sepolia,
+      bundlerTransport: http(pimlicoUrl),
+      paymaster: pimlicoClient,
+      userOperation: {
+        estimateFeesPerGas: async () => {
+          return (await pimlicoClient.getUserOperationGasPrice()).fast
         }
-      }).extend(erc7579Actions())
+      }
+    }).extend(erc7579Actions())
 
-      // We store the clients in the state to use them in the following steps:
-      setSafeAccount(safeAccount)
-      setPimlicoClient(pimlicoClient)
-      setSmartAccountClient(smartAccountClient)
+    // We store the clients in the state to use them in the following steps:
+    setSafeAccount(safeAccount)
+    setSmartAccountClient(smartAccountClient)
 
-      console.log('setup done')
+    console.log('setup done')
+  }
+
+  const connectWallets = async () => {
+    const addresses = await walletClient.requestAddresses()
+    console.log('Connected wallets:', addresses)
+    setOwnerAddress(addresses[0])
+    setExecutorAddress(addresses[1])
+
+    if (addresses.length >= 2) {
+      init()
     }
-
-    init()
-  }, [])
+  }
 
   const installModule = async () => {
     console.log('Installing module...')
@@ -120,6 +131,9 @@ export default function Home () {
     })
 
     console.log('Module installed:', transactionReceipt)
+
+    setIsModuleInstalled(true)
+    setIsSafeDeployed(await safeAccount?.isDeployed())
   }
 
   const executeOnOwnedAccount = async () => {
@@ -212,9 +226,35 @@ export default function Home () {
     console.log('Module uninstalled, tx receipt:', receipt)
   }
 
+  if (!ownerAddress || !executorAddress) {
+    return (
+      <div className='card'>
+        <div className='title'>Connect Wallets</div>
+        <div>
+          Please ensure to connect with two accounts to this site. The second
+          account needs to have some Sepolia Eth for gas. If you accidentally
+          connected with only one account, please disconnect the account in
+          MetaMask and reconnect both accounts.
+        </div>
+        <button onClick={connectWallets}>Connect Wallet</button>
+      </div>
+    )
+  }
+
   return (
     <div className='card'>
       <div className='title'>Safe 7579 Module</div>
+      {safeAddress && <pre>Safe Address: {safeAddress}</pre>}
+      {isSafeDeployed ? (
+        <div>☑️ Safe is deployed</div>
+      ) : (
+        <div>🔘 Safe is not deployed</div>
+      )}
+      {isModuleInstalled ? (
+        <div>☑️ Module is installed</div>
+      ) : (
+        <div>🔘 Module is not installed</div>
+      )}
       <button onClick={installModule}>Install Module</button>
       <button onClick={executeOnOwnedAccount}>Execute on owned account</button>
       <button onClick={addOwner}>Add Owner</button>

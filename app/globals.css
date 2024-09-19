@@ -1,7 +1,6 @@
 :root {
   background-color: #121312; 
   font-family: 'DM Sans', sans-serif;
-  font-size: 13px;
 }
 
 * {
@@ -40,7 +39,7 @@ body {
   padding: 24px;
   text-align: left;
   width: 100%;
-  align-items: center;
+  align-items: start;
   display: flex;
   flex-direction: column;
 }
@@ -49,6 +48,7 @@ body {
   display: flex;
   align-items: center;
   gap: 10px;
+  margin-bottom: 24px;
   font-size: large;
 }
 
