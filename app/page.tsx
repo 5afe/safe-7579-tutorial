@@ -27,6 +27,7 @@ export default function Home () {
   const [safeAddress, setSafeAddress] = useState<string | null>(null)
   const [isSafeDeployed, setIsSafeDeployed] = useState(false)
   const [isModuleInstalled, setIsModuleInstalled] = useState(false)
+  const [connectedAccount, setConnectedAccount] = useState(null)
 
   // The module we will use is deployed as a smart contract on Sepolia:
   const ownableExecutorModule = '0xc98B026383885F41d9a995f85FC480E9bb8bB891'
@@ -61,6 +62,7 @@ export default function Home () {
   const checkAddresses = async () => {
     const addresses = await walletClient.getAddresses()
     setOwnerAddress(addresses[0])
+    setConnectedAccount(addresses[0])
     setExecutorAddress(addresses[1])
     if (addresses.length >= 2) {
       init()
@@ -241,6 +243,11 @@ export default function Home () {
     console.log('Module uninstalled, tx receipt:', receipt)
   }
 
+  const checkConnectedAccount = async () => {
+    const addresses = await walletClient.getAddresses()
+    setConnectedAccount(addresses[0])
+  }
+
   if (!ownerAddress || !executorAddress) {
     return (
       <div className='card'>
@@ -271,6 +278,23 @@ export default function Home () {
           message after clicking the button.
         </div>
         <button onClick={installModule}>Install Module</button>
+      </div>
+    )
+  }
+
+  if (connectedAccount !== executorAddress) {
+    return (
+      <div className='card'>
+        <div className='title'>Use the module with the second account</div>
+        <div>
+          In the next step, you will use the module with the second account.
+          Please ensure to connect with the second account to this site. The
+          second account needs to have some Sepolia Eth for gas. Please connect
+          your second account in MetaMask and then click this button.
+        </div>
+        <button onClick={checkConnectedAccount}>
+          Check connected accounts
+        </button>
       </div>
     )
   }
