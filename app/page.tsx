@@ -2,9 +2,18 @@
 
 import { createSmartAccountClient } from 'permissionless'
 import { sepolia } from 'viem/chains'
-import { encodePacked, http, encodeFunctionData, parseAbi } from 'viem'
+import {
+  encodePacked,
+  http,
+  encodeFunctionData,
+  parseAbi,
+  createWalletClient,
+  createPublicClient,
+  custom,
+  encodeAbiParameters,
+  parseAbiParameters
+} from 'viem'
 import { erc7579Actions } from 'permissionless/actions/erc7579'
-import { createPublicClient, createWalletClient } from 'viem'
 import { privateKeyToAccount } from 'viem/accounts'
 import { createPimlicoClient } from 'permissionless/clients/pimlico'
 import { toSafeSmartAccount } from 'permissionless/accounts'
@@ -20,16 +29,12 @@ export default function Home () {
 
   //  Make sure to add your own API key to the Pimlico URL:
   const pimlicoUrl =
-    'https://api.pimlico.io/v2/sepolia/rpc?apikey=YOUR_PIMLICO_API_KEY'
+    'https://api.pimlico.io/v2/sepolia/rpc?apikey=pim_nP3hDrTjXZjYyK34ZgugCk'
 
   // We will use two accounts for this example:
-  // owner is the account that owns the smart account and will install the module.
   // owner2 is the account that will be added as an owner to the smart account via the module.
   // Both accounts are created from private keys. Make sure to replace them with your own private keys.
   // These are the private keys of anvil, don't use them in production, don't send any real funds to these accounts.
-  const owner = privateKeyToAccount(
-    '0xac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80'
-  )
 
   const owner2 = privateKeyToAccount(
     '0x59c6995e998f97a5a0044966f0945389dc9e86dae88c7a8412f4603b6b78690d'
@@ -39,7 +44,13 @@ export default function Home () {
 
   useEffect(() => {
     const init = async () => {
-      // The public client by viem is used as a transport layer:
+      // We create a wallet client to sign the messages with MetaMask:
+      const walletClient = createWalletClient({
+        chain: sepolia,
+        transport: custom(window.ethereum!)
+      })
+
+      // The public client is required for the safe account creation:
       const publicClient = createPublicClient({
         transport: http('https://rpc.ankr.com/eth_sepolia'),
         chain: sepolia
@@ -48,13 +59,15 @@ export default function Home () {
       // The safe account is created using the public client:
       const safeAccount = await toSafeSmartAccount({
         client: publicClient,
-        owners: [owner],
+        owners: [walletClient],
         version: '1.4.1',
         chain: sepolia,
         // These modules are required for the 7579 functionality:
         safe4337ModuleAddress: '0x3Fdb5BC686e861480ef99A6E3FaAe03c0b9F32e2', // These are not meant to be used in production as of now.
         erc7579LaunchpadAddress: '0xEBe001b3D534B9B6E2500FB78E67a1A137f561CE' // These are not meant to be used in production as of now.
       })
+
+      console.log('safe smart account address', safeAccount.address)
 
       // The Pimlico client is used as a paymaster:
       const pimlicoClient = createPimlicoClient({
@@ -171,12 +184,41 @@ export default function Home () {
     console.log('Owner added, tx receipt:', receipt)
   }
 
+  const uninstallModule = async () => {
+    console.log('Uninstalling module...')
+
+    // To uninstall the module, use the `uninstallModule`.
+    // You have to pack the abi parameter yourself:
+    // - previousEntry (address): The address of the previous entry in the module sentinel list.
+    // - deInitData (bytes): The data that is passed to the deInit function of the module.
+    // As this is the only module, the previous entry is the sentinel address 0x1. The deInitData is empty for the
+    // OwnableExecutor.
+    const userOp = await smartAccountClient.uninstallModule({
+      type: 'executor',
+      address: ownableExecutorModule,
+      context: encodeAbiParameters(
+        parseAbiParameters('address prevEntry, bytes memory deInitData'),
+        ['0x0000000000000000000000000000000000000001', '0x']
+      )
+    })
+
+    console.log('User operation:', userOp, '\nwaiting for tx receipt...')
+
+    // We wait for the transaction to be settled:
+    const receipt = await pimlicoClient.waitForUserOperationReceipt({
+      hash: userOp
+    })
+
+    console.log('Module uninstalled, tx receipt:', receipt)
+  }
+
   return (
     <div className='card'>
       <div className='title'>Safe 7579 Module</div>
       <button onClick={installModule}>Install Module</button>
       <button onClick={executeOnOwnedAccount}>Execute on owned account</button>
       <button onClick={addOwner}>Add Owner</button>
+      <button onClick={uninstallModule}>Uninstall Module</button>
     </div>
   )
 }
