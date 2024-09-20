@@ -233,6 +233,7 @@ export default function Home () {
     setModuleIsUninstalled(true)
   }
 
+  // Step 1: Connect Wallets
   if (!ownerAddress || !executorAddress) {
     return (
       <div className='card'>
@@ -250,6 +251,7 @@ export default function Home () {
     )
   }
 
+  // Step 2: Install Module
   if (!moduleIsInstalled) {
     return (
       <div className='card'>
@@ -271,6 +273,7 @@ export default function Home () {
     )
   }
 
+  // Step 3: Execute on Owned Account
   if (!executorTransactionIsSent) {
     return (
       <div className='card'>
@@ -296,6 +299,7 @@ export default function Home () {
     )
   }
 
+  // Step 4: Add Owner
   if (!ownerIsAdded) {
     return (
       <div className='card'>
@@ -317,6 +321,7 @@ export default function Home () {
     )
   }
 
+  // Step 5: Uninstall Module
   if (!moduleIsUninstalled) {
     return (
       <div className='card'>
@@ -333,6 +338,7 @@ export default function Home () {
     )
   }
 
+  // Step 6: Finish
   return (
     <div className='card'>
       <div className='title'>Well done</div>
