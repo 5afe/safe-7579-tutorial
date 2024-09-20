@@ -1,7 +1,8 @@
 :root {
   background-color: #121312; 
-  font-family: 'DM Sans', sans-serif;
+  font-family: Citerne, 'DM Sans', sans-serif;
   font-size: 14px;
+  line-height: 1.4;
 }
 
 * {
@@ -29,13 +30,14 @@ body {
   width: 100%;
   display: flex;
   flex-direction: column;
+  box-shadow: 0 0 100px rgba(18, 255, 128, 0.4);
 }
 
 .title {
   display: flex;
   align-items: center;
   gap: 10px;
-  margin-bottom: 24px;
+  margin-bottom: 35px;
   font-size: large;
 }
 
@@ -43,6 +45,7 @@ body {
   display: flex;
   justify-content: flex-end;
   gap: 16px;
+  margin-top: 50px;
 }
 
 button {
@@ -54,8 +57,6 @@ button {
   cursor: pointer;
   font-weight: bold;
   padding: 8px 24px;
-  margin-top: 24px;
-  margin-bottom: 24px;
 }
 button.skip {
   background-color: transparent;

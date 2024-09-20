@@ -17,6 +17,7 @@ import { erc7579Actions } from 'permissionless/actions/erc7579'
 import { createPimlicoClient } from 'permissionless/clients/pimlico'
 import { toSafeSmartAccount } from 'permissionless/accounts'
 import { useEffect, useState } from 'react'
+import truncateEthAddress from 'truncate-eth-address'
 
 export default function Home () {
   const [safeAccount, setSafeAccount] = useState(null)
@@ -51,6 +52,11 @@ export default function Home () {
     chain: sepolia
   })
 
+  // Check for connected accounts on page load:
+  useEffect(() => {
+    checkAddresses()
+  }, [])
+
   // Check whether the user has connected two accounts, without MetaMask popping up:
   const checkAddresses = async () => {
     const addresses = await walletClient.getAddresses()
@@ -59,17 +65,6 @@ export default function Home () {
     if (addresses.length >= 2) {
       init()
     }
-  }
-
-  // Check for connected accounts on page load:
-  useEffect(() => {
-    checkAddresses()
-  }, [])
-
-  const connectWallets = async () => {
-    // Only at the request address call, MetaMask will pop up and ask the user to connect:
-    await walletClient.requestAddresses()
-    checkAddresses()
   }
 
   // The following functions will be filled with code in the following steps:
@@ -237,6 +232,12 @@ export default function Home () {
     setModuleIsUninstalled(true)
   }
 
+  const connectWallets = async () => {
+    // Only at the request address call, MetaMask will pop up and ask the user to connect:
+    await walletClient.requestAddresses()
+    checkAddresses()
+  }
+
   // Depending on the state of the tutorial, different cards are displayed:
   // Step 1: Connect Wallets
   if (!ownerAddress || !executorAddress) {
@@ -245,9 +246,7 @@ export default function Home () {
         <div className='title'>Connect Wallets</div>
         <div>
           Please ensure to connect with two accounts to this site. The second
-          account needs to have some Sepolia Eth for gas. If you accidentally
-          connected with only one account, please disconnect the account in
-          MetaMask and reconnect both accounts.
+          account needs to have some Sepolia Eth for gas.
         </div>
         <div className='actions'>
           <button onClick={connectWallets}>Connect Wallet</button>
@@ -262,7 +261,8 @@ export default function Home () {
       <div className='card'>
         <div className='title'>Install Module</div>
         <div>
-          Your Safe has the address {safeAddress} and is{' '}
+          Your Safe has the address{' '}
+          {safeAddress && truncateEthAddress(safeAddress)} and is{' '}
           {safeIsDeployed ? 'deployed' : 'not yet deployed'}.
           {!safeIsDeployed &&
             'It will be deployed with your first transaction, when you install the module.'}
@@ -348,7 +348,7 @@ export default function Home () {
     <div className='card'>
       <div className='title'>Well done</div>
       <div>
-        You have successfully installed, executed on, added an owner to, and
+        You have successfully installed, executed on, interacted with, and
         uninstalled the module. This tutorial is now complete.
       </div>
     </div>
