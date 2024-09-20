@@ -32,6 +32,7 @@ export default function Home () {
     useState(false)
   const [ownerIsAdded, setOwnerIsAdded] = useState(false)
   const [moduleIsUninstalled, setModuleIsUninstalled] = useState(false)
+  const [loading, setLoading] = useState(false)
 
   // The module we will use is deployed as a smart contract on Sepolia:
   const ownableExecutorModule = '0xc98B026383885F41d9a995f85FC480E9bb8bB891'
@@ -121,6 +122,7 @@ export default function Home () {
   }
 
   const installModule = async () => {
+    setLoading(true)
     console.log('Installing module...')
 
     // The smart accounts client operates on 4337. It does not send transactions directly but instead creates user
@@ -144,9 +146,11 @@ export default function Home () {
 
     setModuleIsInstalled(true)
     setSafeIsDeployed(await safeAccount?.isDeployed())
+    setLoading(false)
   }
 
   const executeOnOwnedAccount = async () => {
+    setLoading(true)
     console.log('Executing on owned account...')
 
     // We encode the transaction we want the smart account to send. The fields are:
@@ -174,9 +178,11 @@ export default function Home () {
     await publicClient.waitForTransactionReceipt({ hash })
 
     setExecutorTransactionIsSent(true)
+    setLoading(false)
   }
 
   const addOwner = async () => {
+    setLoading(true)
     console.log('Adding owner...')
 
     // The addOwner function is part of the OwnableExecutorModule. We encode the function data using the viem library:
@@ -201,9 +207,11 @@ export default function Home () {
 
     console.log('Owner added, tx receipt:', receipt)
     setOwnerIsAdded(true)
+    setLoading(false)
   }
 
   const uninstallModule = async () => {
+    setLoading(true)
     console.log('Uninstalling module...')
 
     // To uninstall the module, use the `uninstallModule`.
@@ -230,6 +238,7 @@ export default function Home () {
 
     console.log('Module uninstalled, tx receipt:', receipt)
     setModuleIsUninstalled(true)
+    setLoading(false)
   }
 
   const connectWallets = async () => {
@@ -272,7 +281,12 @@ export default function Home () {
           message after clicking the button.
         </div>
         <div className='actions'>
-          <button onClick={installModule}>Install Module</button>
+          <button
+            onClick={installModule}
+            className={loading && 'button--loading'}
+          >
+            Install Module
+          </button>
         </div>
       </div>
     )
@@ -292,11 +306,17 @@ export default function Home () {
         <div className='actions'>
           <button
             className='skip'
-            onClick={() => setExecutorTransactionIsSent(true)}
+            onClick={() => {
+              setExecutorTransactionIsSent(true)
+              setLoading(false)
+            }}
           >
             Skip
           </button>
-          <button onClick={executeOnOwnedAccount}>
+          <button
+            onClick={executeOnOwnedAccount}
+            className={loading && 'button--loading'}
+          >
             Execute on owned account
           </button>
         </div>
@@ -316,10 +336,18 @@ export default function Home () {
         </div>
         <div>
           <div className='actions'>
-            <button className='skip' onClick={() => setOwnerIsAdded(true)}>
+            <button
+              className='skip'
+              onClick={() => {
+                setOwnerIsAdded(true)
+                setLoading(false)
+              }}
+            >
               Skip
             </button>
-            <button onClick={addOwner}>Add Owner</button>
+            <button onClick={addOwner} className={loading && 'button--loading'}>
+              Add Owner
+            </button>
           </div>
         </div>
       </div>
@@ -337,7 +365,12 @@ export default function Home () {
           button.
         </div>
         <div className='actions'>
-          <button onClick={uninstallModule}>Uninstall Module</button>
+          <button
+            onClick={uninstallModule}
+            className={loading && 'button--loading'}
+          >
+            Uninstall Module
+          </button>
         </div>
       </div>
     )

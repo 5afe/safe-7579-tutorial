@@ -30,7 +30,7 @@ body {
   width: 100%;
   display: flex;
   flex-direction: column;
-  box-shadow: 0 0 100px rgba(18, 255, 128, 0.4);
+  box-shadow: 0 0 100px rgba(18, 255, 128, 0.2);
 }
 
 .title {
@@ -57,12 +57,46 @@ button {
   cursor: pointer;
   font-weight: bold;
   padding: 8px 24px;
+  position: relative;
 }
 button.skip {
   background-color: transparent;
   border: 1px solid #12ff80;
   color: #12ff80;
 }
+
+.button--loading {
+  color: transparent;
+  background-color: transparent;
+}
+
+.button--loading::after {
+  content: "";
+  position: absolute;
+  width: 16px;
+  height: 16px;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  margin: auto;
+  border: 4px solid transparent;
+  border-top-color: #12ff80;
+  border-radius: 50%;
+  animation: button-loading-spinner 1s ease infinite;
+}
+
+
+@keyframes button-loading-spinner {
+  from {
+    transform: rotate(0turn);
+  }
+
+  to {
+    transform: rotate(1turn);
+  }
+}
+
 
 pre {
   border: 1px solid #303033;
