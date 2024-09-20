@@ -252,7 +252,7 @@ export default function Home () {
   if (!ownerAddress || !executorAddress) {
     return (
       <div className='card'>
-        <div className='title'>Connect Wallets</div>
+        <div className='title'>Connect two accounts</div>
         <div>
           Please ensure to connect with two accounts to this site. The second
           account needs to have some Sepolia Eth for gas.
@@ -278,7 +278,7 @@ export default function Home () {
         </div>
         <div>
           You can now install the module. MetaMask will ask you to sign a
-          message after clicking the button.
+          message with the first account after clicking the button.
         </div>
         <div className='actions'>
           <button
@@ -300,8 +300,11 @@ export default function Home () {
         <div>
           You can now execute a transaction on the owned account as the
           executor. In this case, you will send a dummy transaction. But you
-          could also claim the ownership of the account. Please notice, that the
-          app requests a transaction from the second account.
+          could also claim the ownership of the account.
+        </div>
+        <div>
+          When you click the button, Metamask will request a transaction from
+          the second account.
         </div>
         <div className='actions'>
           <button
@@ -332,7 +335,7 @@ export default function Home () {
         <div>
           Now, you will interact with the 7579 module directly. You can add an
           owner to the Safe. The new owner will be able to execute transactions
-          on the Safe.
+          on the Safe. Metamask will request a signature from the first owner.
         </div>
         <div>
           <div className='actions'>
