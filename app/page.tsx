@@ -25,11 +25,12 @@ export default function Home () {
   const [publicClient, setPublicClient] = useState<>(null)
   const [executorAddress, setExecutorAddress] = useState<string | null>(null)
   const [safeAddress, setSafeAddress] = useState<string | null>(null)
-  const [isSafeDeployed, setIsSafeDeployed] = useState(false)
-  const [isModuleInstalled, setIsModuleInstalled] = useState(false)
+  const [safeIsDeployed, setSafeIsDeployed] = useState(false)
+  const [moduleIsInstalled, setModuleIsInstalled] = useState(false)
   const [executorTransactionIsSent, setExecutorTransactionIsSent] =
     useState(false)
   const [ownerIsAdded, setOwnerIsAdded] = useState(false)
+  const [moduleIsUninstalled, setModuleIsUninstalled] = useState(false)
 
   // The module we will use is deployed as a smart contract on Sepolia:
   const ownableExecutorModule = '0xc98B026383885F41d9a995f85FC480E9bb8bB891'
@@ -84,7 +85,7 @@ export default function Home () {
     })
 
     setSafeAddress(safeAccount.address)
-    setIsSafeDeployed(await safeAccount.isDeployed())
+    setSafeIsDeployed(await safeAccount.isDeployed())
 
     // Finally, we create the smart account client, which provides functionality to interact with the smart account:
     const smartAccountClient = createSmartAccountClient({
@@ -105,7 +106,7 @@ export default function Home () {
       context: '0x'
     })
 
-    setIsModuleInstalled(isModuleInstalled)
+    setModuleIsInstalled(isModuleInstalled)
 
     // We store the clients in the state to use them in the following steps:
     setSafeAccount(safeAccount)
@@ -142,8 +143,8 @@ export default function Home () {
 
     console.log('Module installed:', transactionReceipt)
 
-    setIsModuleInstalled(true)
-    setIsSafeDeployed(await safeAccount?.isDeployed())
+    setModuleIsInstalled(true)
+    setSafeIsDeployed(await safeAccount?.isDeployed())
   }
 
   const executeOnOwnedAccount = async () => {
@@ -229,6 +230,7 @@ export default function Home () {
     })
 
     console.log('Module uninstalled, tx receipt:', receipt)
+    setModuleIsUninstalled(true)
   }
 
   if (!ownerAddress || !executorAddress) {
@@ -248,14 +250,14 @@ export default function Home () {
     )
   }
 
-  if (!isModuleInstalled) {
+  if (!moduleIsInstalled) {
     return (
       <div className='card'>
         <div className='title'>Install Module</div>
         <div>
           Your Safe has the address {safeAddress} and is{' '}
-          {isSafeDeployed ? 'deployed' : 'not yet deployed'}.
-          {!isSafeDeployed &&
+          {safeIsDeployed ? 'deployed' : 'not yet deployed'}.
+          {!safeIsDeployed &&
             'It will be deployed with your first transaction, when you install the module.'}
         </div>
         <div>
@@ -305,7 +307,7 @@ export default function Home () {
         </div>
         <div>
           <div className='actions'>
-            <button className='skip' onClick={addOwner}>
+            <button className='skip' onClick={() => setOwnerIsAdded(true)}>
               Skip
             </button>
             <button onClick={addOwner}>Add Owner</button>
@@ -315,24 +317,29 @@ export default function Home () {
     )
   }
 
+  if (!moduleIsUninstalled) {
+    return (
+      <div className='card'>
+        <div className='title'>Uninstall Module</div>
+        <div>
+          To finish the lifecycle of the module, you can now uninstall the
+          module. MetaMask will ask you to sign a message after clicking the
+          button.
+        </div>
+        <div className='actions'>
+          <button onClick={uninstallModule}>Uninstall Module</button>
+        </div>
+      </div>
+    )
+  }
+
   return (
     <div className='card'>
-      <div className='title'>Safe 7579 Module</div>
-      {safeAddress && <pre>Safe Address: {safeAddress}</pre>}
-      {isSafeDeployed ? (
-        <div>☑️ Safe is deployed</div>
-      ) : (
-        <div>🔘 Safe is not deployed</div>
-      )}
-      {isModuleInstalled ? (
-        <div>☑️ Module is installed</div>
-      ) : (
-        <div>🔘 Module is not installed</div>
-      )}
-      <button onClick={installModule}>Install Module</button>
-      <button onClick={executeOnOwnedAccount}>Execute on owned account</button>
-      <button onClick={addOwner}>Add Owner</button>
-      <button onClick={uninstallModule}>Uninstall Module</button>
+      <div className='title'>Well done</div>
+      <div>
+        You have successfully installed, executed on, added an owner to, and
+        uninstalled the module. This tutorial is now complete.
+      </div>
     </div>
   )
 }
