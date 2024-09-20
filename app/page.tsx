@@ -68,6 +68,12 @@ export default function Home () {
     }
   }
 
+  const connectWallets = async () => {
+    // Only at the request address call, MetaMask will pop up and ask the user to connect:
+    await walletClient.requestAddresses()
+    checkAddresses()
+  }
+
   // The following functions will be filled with code in the following steps:
 
   const init = async () => {
@@ -239,12 +245,6 @@ export default function Home () {
     console.log('Module uninstalled, tx receipt:', receipt)
     setModuleIsUninstalled(true)
     setLoading(false)
-  }
-
-  const connectWallets = async () => {
-    // Only at the request address call, MetaMask will pop up and ask the user to connect:
-    await walletClient.requestAddresses()
-    checkAddresses()
   }
 
   // Depending on the state of the tutorial, different cards are displayed:
