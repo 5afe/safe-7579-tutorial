@@ -43,9 +43,9 @@ export default function Home () {
     transport: custom(window.ethereum!)
   })
 
-  //  Make sure to add your own API key to the Pimlico URL:
+  //  TODO: Make sure to add your own API key to the Pimlico URL:
   const pimlicoUrl =
-    'https://api.pimlico.io/v2/sepolia/rpc?apikey=pim_nP3hDrTjXZjYyK34ZgugCk'
+    'https://api.pimlico.io/v2/sepolia/rpc?apikey=YOUR_PIMLICO_API_KEY'
 
   // The Pimlico client is used as a paymaster:
   const pimlicoClient = createPimlicoClient({
