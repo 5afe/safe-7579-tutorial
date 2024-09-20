@@ -27,8 +27,9 @@ export default function Home () {
   const [safeAddress, setSafeAddress] = useState<string | null>(null)
   const [isSafeDeployed, setIsSafeDeployed] = useState(false)
   const [isModuleInstalled, setIsModuleInstalled] = useState(false)
-  const [didSentExecutorTransaction, setDidSentExecutorTransaction] =
+  const [executorTransactionIsSent, setExecutorTransactionIsSent] =
     useState(false)
+  const [ownerIsAdded, setOwnerIsAdded] = useState(false)
 
   // The module we will use is deployed as a smart contract on Sepolia:
   const ownableExecutorModule = '0xc98B026383885F41d9a995f85FC480E9bb8bB891'
@@ -172,7 +173,7 @@ export default function Home () {
 
     await publicClient.waitForTransactionReceipt({ hash })
 
-    setDidSentExecutorTransaction(true)
+    setExecutorTransactionIsSent(true)
   }
 
   const addOwner = async () => {
@@ -182,7 +183,7 @@ export default function Home () {
     const addOwnerData = encodeFunctionData({
       abi: parseAbi(['function addOwner(address)']),
       functionName: 'addOwner',
-      args: ['0x90F79bf6EB2c4f870365E785982E1f101E93b906']
+      args: ['0x0000000000000000000000000000000000000002'] // We add 0x2 as the new owner just as an example.
     })
 
     // We use the smart account client to send the user operation: In this call, our smart account calls the `addOwner`
@@ -199,6 +200,7 @@ export default function Home () {
     })
 
     console.log('Owner added, tx receipt:', receipt)
+    setOwnerIsAdded(true)
   }
 
   const uninstallModule = async () => {
@@ -239,7 +241,9 @@ export default function Home () {
           connected with only one account, please disconnect the account in
           MetaMask and reconnect both accounts.
         </div>
-        <button onClick={connectWallets}>Connect Wallet</button>
+        <div className='actions'>
+          <button onClick={connectWallets}>Connect Wallet</button>
+        </div>
       </div>
     )
   }
@@ -258,12 +262,14 @@ export default function Home () {
           You can now install the module. MetaMask will ask you to sign a
           message after clicking the button.
         </div>
-        <button onClick={installModule}>Install Module</button>
+        <div className='actions'>
+          <button onClick={installModule}>Install Module</button>
+        </div>
       </div>
     )
   }
 
-  if (!didSentExecutorTransaction) {
+  if (!executorTransactionIsSent) {
     return (
       <div className='card'>
         <div className='title'>Execute on owned account</div>
@@ -273,9 +279,38 @@ export default function Home () {
           could also claim the ownership of the account. Please notice, that the
           app requests a transaction from the second account.
         </div>
-        <button onClick={executeOnOwnedAccount}>
-          Execute on owned account
-        </button>
+        <div className='actions'>
+          <button
+            className='skip'
+            onClick={() => setExecutorTransactionIsSent(true)}
+          >
+            Skip
+          </button>
+          <button onClick={executeOnOwnedAccount}>
+            Execute on owned account
+          </button>
+        </div>
+      </div>
+    )
+  }
+
+  if (!ownerIsAdded) {
+    return (
+      <div className='card'>
+        <div className='title'>Add Owner</div>
+        <div>
+          Now, you will interact with the 7579 module directly. You can add an
+          owner to the Safe. The new owner will be able to execute transactions
+          on the Safe.
+        </div>
+        <div>
+          <div className='actions'>
+            <button className='skip' onClick={addOwner}>
+              Skip
+            </button>
+            <button onClick={addOwner}>Add Owner</button>
+          </div>
+        </div>
       </div>
     )
   }

@@ -11,19 +11,6 @@
   color: #fff;
 }
 
-button {
-  background-color: #12ff80;
-  border: none;
-  border-radius: 6px;
-  color: rgba(0, 0, 0, 0.87);
-  cursor: pointer;
-  font-weight: bold;
-  padding: 8px 24px;
-  margin-top: 24px;
-  margin-bottom: 24px;
-  display: block;
-}
-
 body {
   align-items: center;
   display: flex;
@@ -40,7 +27,6 @@ body {
   padding: 24px;
   text-align: left;
   width: 100%;
-  align-items: start;
   display: flex;
   flex-direction: column;
 }
@@ -51,6 +37,30 @@ body {
   gap: 10px;
   margin-bottom: 24px;
   font-size: large;
+}
+
+.actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 16px;
+}
+
+button {
+  background-color: #12ff80;
+  border: none;
+  border-radius: 6px;
+  color: rgba(0, 0, 0, 0.87);
+  border: 1px solid #12ff80;
+  cursor: pointer;
+  font-weight: bold;
+  padding: 8px 24px;
+  margin-top: 24px;
+  margin-bottom: 24px;
+}
+button.skip {
+  background-color: transparent;
+  border: 1px solid #12ff80;
+  color: #12ff80;
 }
 
 pre {
