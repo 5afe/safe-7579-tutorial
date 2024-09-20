@@ -300,7 +300,7 @@ export default function Home () {
         <div>
           You can now execute a transaction on the owned account as the
           executor. In this case, you will send a dummy transaction. But you
-          could also claim the ownership of the account.
+          could also claim ownership of the account.
         </div>
         <div>
           When you click the button, Metamask will request a transaction from
@@ -363,7 +363,7 @@ export default function Home () {
       <div className='card'>
         <div className='title'>Uninstall Module</div>
         <div>
-          To finish the lifecycle of the module, you can now uninstall the
+          To finish the module&apos;s lifecycle, you can now uninstall the
           module. MetaMask will ask you to sign a message after clicking the
           button.
         </div>
@@ -384,8 +384,9 @@ export default function Home () {
     <div className='card'>
       <div className='title'>Well done</div>
       <div>
-        You have successfully installed, executed on, interacted with, and
-        uninstalled the module. This tutorial is now complete.
+        Congratulations! You&apos;ve successfully installed, executed,
+        interacted with, and uninstalled the module. This tutorial is now
+        complete. Great job! Keep exploring!
       </div>
     </div>
   )
