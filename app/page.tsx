@@ -14,7 +14,6 @@ import {
   parseAbiParameters
 } from 'viem'
 import { erc7579Actions } from 'permissionless/actions/erc7579'
-import { privateKeyToAccount } from 'viem/accounts'
 import { createPimlicoClient } from 'permissionless/clients/pimlico'
 import { toSafeSmartAccount } from 'permissionless/accounts'
 import { useEffect, useState } from 'react'
@@ -23,11 +22,13 @@ export default function Home () {
   const [safeAccount, setSafeAccount] = useState(null)
   const [smartAccountClient, setSmartAccountClient] = useState(null)
   const [ownerAddress, setOwnerAddress] = useState<string | null>(null)
+  const [publicClient, setPublicClient] = useState<>(null)
   const [executorAddress, setExecutorAddress] = useState<string | null>(null)
   const [safeAddress, setSafeAddress] = useState<string | null>(null)
   const [isSafeDeployed, setIsSafeDeployed] = useState(false)
   const [isModuleInstalled, setIsModuleInstalled] = useState(false)
-  const [connectedAccount, setConnectedAccount] = useState(null)
+  const [didSentExecutorTransaction, setDidSentExecutorTransaction] =
+    useState(false)
 
   // The module we will use is deployed as a smart contract on Sepolia:
   const ownableExecutorModule = '0xc98B026383885F41d9a995f85FC480E9bb8bB891'
@@ -48,21 +49,11 @@ export default function Home () {
     chain: sepolia
   })
 
-  // We will use two accounts for this example:
-  // owner2 is the account that will be added as an owner to the smart account via the module.
-  // Both accounts are created from private keys. Make sure to replace them with your own private keys.
-  // These are the private keys of anvil, don't use them in production, don't send any real funds to these accounts.
-
-  const owner2 = privateKeyToAccount(
-    '0x59c6995e998f97a5a0044966f0945389dc9e86dae88c7a8412f4603b6b78690d'
-  )
-
   // These functions will be filled with code in the following steps:
 
   const checkAddresses = async () => {
     const addresses = await walletClient.getAddresses()
     setOwnerAddress(addresses[0])
-    setConnectedAccount(addresses[0])
     setExecutorAddress(addresses[1])
     if (addresses.length >= 2) {
       init()
@@ -118,6 +109,7 @@ export default function Home () {
     // We store the clients in the state to use them in the following steps:
     setSafeAccount(safeAccount)
     setSmartAccountClient(smartAccountClient)
+    setPublicClient(publicClient)
 
     console.log('setup done')
   }
@@ -137,7 +129,7 @@ export default function Home () {
     const userOpHash = await smartAccountClient.installModule({
       type: 'executor',
       address: ownableExecutorModule,
-      context: encodePacked(['address'], [owner2.address])
+      context: encodePacked(['address'], [executorAddress])
     })
 
     console.log('User operation hash:', userOpHash, '\nwaiting for receipt...')
@@ -156,17 +148,6 @@ export default function Home () {
   const executeOnOwnedAccount = async () => {
     console.log('Executing on owned account...')
 
-    // We create a wallet client for the owner2 account. This client is used to send transactions on behalf of the
-    // owner2. This transaction is sent as a regular transaction, so it is not free. Make sure owner2 owns enough funds
-    // to pay for gas.
-    const walletClient = createWalletClient({
-      account: owner2,
-      transport: http('https://rpc.ankr.com/eth_sepolia'),
-      chain: sepolia
-    })
-
-    console.log('wallet client', walletClient)
-
     // We encode the transaction we want the smart account to send. The fields are:
     // - to (address)
     // - value (uint256)
@@ -180,13 +161,18 @@ export default function Home () {
     // Now, we call the `executeOnOwnedAccount` function of the `ownableExecutorModule` with the address of the safe
     // account and the data we want to execute. This will make our smart account send the transaction that is encoded above.
     const hash = await walletClient.writeContract({
+      account: executorAddress,
       abi: parseAbi(['function executeOnOwnedAccount(address, bytes)']),
       functionName: 'executeOnOwnedAccount',
-      args: [safeAccount?.address, executeOnOwnedAccountData],
+      args: [safeAddress, executeOnOwnedAccountData],
       address: ownableExecutorModule
     })
 
     console.log('Executed on owned account, transaction hash:', hash)
+
+    await publicClient.waitForTransactionReceipt({ hash })
+
+    setDidSentExecutorTransaction(true)
   }
 
   const addOwner = async () => {
@@ -243,11 +229,6 @@ export default function Home () {
     console.log('Module uninstalled, tx receipt:', receipt)
   }
 
-  const checkConnectedAccount = async () => {
-    const addresses = await walletClient.getAddresses()
-    setConnectedAccount(addresses[0])
-  }
-
   if (!ownerAddress || !executorAddress) {
     return (
       <div className='card'>
@@ -282,18 +263,18 @@ export default function Home () {
     )
   }
 
-  if (connectedAccount !== executorAddress) {
+  if (!didSentExecutorTransaction) {
     return (
       <div className='card'>
-        <div className='title'>Use the module with the second account</div>
+        <div className='title'>Execute on owned account</div>
         <div>
-          In the next step, you will use the module with the second account.
-          Please ensure to connect with the second account to this site. The
-          second account needs to have some Sepolia Eth for gas. Please connect
-          your second account in MetaMask and then click this button.
+          You can now execute a transaction on the owned account as the
+          executor. In this case, you will send a dummy transaction. But you
+          could also claim the ownership of the account. Please notice, that the
+          app requests a transaction from the second account.
         </div>
-        <button onClick={checkConnectedAccount}>
-          Check connected accounts
+        <button onClick={executeOnOwnedAccount}>
+          Execute on owned account
         </button>
       </div>
     )
