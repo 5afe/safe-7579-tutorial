@@ -51,8 +51,7 @@ export default function Home () {
     chain: sepolia
   })
 
-  // These functions will be filled with code in the following steps:
-
+  // Check whether the user has connected two accounts, without MetaMask popping up:
   const checkAddresses = async () => {
     const addresses = await walletClient.getAddresses()
     setOwnerAddress(addresses[0])
@@ -62,9 +61,18 @@ export default function Home () {
     }
   }
 
+  // Check for connected accounts on page load:
   useEffect(() => {
     checkAddresses()
   }, [])
+
+  const connectWallets = async () => {
+    // Only at the request address call, MetaMask will pop up and ask the user to connect:
+    await walletClient.requestAddresses()
+    checkAddresses()
+  }
+
+  // The following functions will be filled with code in the following steps:
 
   const init = async () => {
     // The public client is required for the safe account creation:
@@ -100,6 +108,7 @@ export default function Home () {
       }
     }).extend(erc7579Actions())
 
+    // Check whether the module has been installed already:
     const isModuleInstalled = await smartAccountClient.isModuleInstalled({
       address: ownableExecutorModule,
       type: 'executor',
@@ -114,11 +123,6 @@ export default function Home () {
     setPublicClient(publicClient)
 
     console.log('setup done')
-  }
-
-  const connectWallets = async () => {
-    await walletClient.requestAddresses()
-    checkAddresses()
   }
 
   const installModule = async () => {
@@ -233,6 +237,7 @@ export default function Home () {
     setModuleIsUninstalled(true)
   }
 
+  // Depending on the state of the tutorial, different cards are displayed:
   // Step 1: Connect Wallets
   if (!ownerAddress || !executorAddress) {
     return (
