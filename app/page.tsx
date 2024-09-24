@@ -17,10 +17,7 @@ import {
   Client
 } from 'viem'
 import { Erc7579Actions, erc7579Actions } from 'permissionless/actions/erc7579'
-import {
-  createPimlicoClient,
-  PimlicoClient
-} from 'permissionless/clients/pimlico'
+import { createPimlicoClient } from 'permissionless/clients/pimlico'
 import {
   toSafeSmartAccount,
   ToSafeSmartAccountReturnType
@@ -33,11 +30,7 @@ export default function Home () {
   const [safeAccount, setSafeAccount] =
     useState<ToSafeSmartAccountReturnType<'0.7'> | null>(null)
   const [smartAccountClient, setSmartAccountClient] = useState<
-    | (Client<
-        HttpTransport,
-        typeof sepolia,
-        ToSafeSmartAccountReturnType<'0.7'>
-      > &
+    | (Client<HttpTransport, typeof sepolia> &
         Erc7579Actions<ToSafeSmartAccountReturnType<'0.7'>> & {
           sendUserOperation: (
             params: SendUserOperationParameters
@@ -74,11 +67,7 @@ export default function Home () {
     'https://api.pimlico.io/v2/sepolia/rpc?apikey=YOUR_PIMLICO_API_KEY'
 
   // The Pimlico client is used as a paymaster:
-  const pimlicoClient = createPimlicoClient<
-    '0.7',
-    HttpTransport,
-    typeof sepolia
-  >({
+  const pimlicoClient = createPimlicoClient({
     transport: http(pimlicoUrl),
     chain: sepolia
   })
@@ -131,12 +120,7 @@ export default function Home () {
     setSafeIsDeployed(await safeAccount.isDeployed())
 
     // Finally, we create the smart account client, which provides functionality to interact with the smart account:
-    const smartAccountClient = createSmartAccountClient<
-      HttpTransport,
-      typeof sepolia,
-      ToSafeSmartAccountReturnType<'0.7'>,
-      PimlicoClient<'0.7', HttpTransport, typeof sepolia>
-    >({
+    const smartAccountClient = createSmartAccountClient({
       account: safeAccount,
       chain: sepolia,
       bundlerTransport: http(pimlicoUrl),
