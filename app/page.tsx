@@ -14,7 +14,8 @@ import {
   parseAbiParameters,
   Transport,
   HttpTransport,
-  Client
+  Client,
+  parseEther
 } from 'viem'
 import { Erc7579Actions, erc7579Actions } from 'permissionless/actions/erc7579'
 import { createPimlicoClient } from 'permissionless/clients/pimlico'
@@ -59,7 +60,8 @@ export default function Home () {
     `0x${string}`
   >({
     chain: sepolia,
-    transport: custom(window.ethereum!)
+    // @ts-expect-error MetaMask is a requirement for this tutorial
+    transport: custom(typeof window !== 'undefined' ? window.ethereum! : null)
   })
 
   //  TODO: Make sure to add your own API key to the Pimlico URL:
@@ -187,7 +189,7 @@ export default function Home () {
     // In this example case, it is a dummy transaction with zero data.
     const executeOnOwnedAccountData = encodePacked(
       ['address', 'uint256', 'bytes'],
-      ['0xa6d3DEBAAB2B8093e69109f23A75501F864F74e2', 0n, '0x']
+      ['0xa6d3DEBAAB2B8093e69109f23A75501F864F74e2', parseEther('0'), '0x']
     )
 
     // Now, we call the `executeOnOwnedAccount` function of the `ownableExecutorModule` with the address of the safe
@@ -222,7 +224,13 @@ export default function Home () {
     // We use the smart account client to send the user operation: In this call, our smart account calls the `addOwner`
     // function at the `ownableExecutorModule` with the new owner's address.
     const userOp = await smartAccountClient?.sendUserOperation({
-      calls: [{ to: ownableExecutorModule, value: 0n, data: addOwnerData }]
+      calls: [
+        {
+          to: ownableExecutorModule,
+          value: parseEther('0'),
+          data: addOwnerData
+        }
+      ]
     })
 
     console.log('User operation:', userOp, '\nwaiting for tx receipt...')
