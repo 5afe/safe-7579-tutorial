@@ -11,19 +11,41 @@ import {
   createPublicClient,
   custom,
   encodeAbiParameters,
-  parseAbiParameters
+  parseAbiParameters,
+  Transport,
+  HttpTransport,
+  Client
 } from 'viem'
-import { erc7579Actions } from 'permissionless/actions/erc7579'
-import { createPimlicoClient } from 'permissionless/clients/pimlico'
-import { toSafeSmartAccount } from 'permissionless/accounts'
+import { Erc7579Actions, erc7579Actions } from 'permissionless/actions/erc7579'
+import {
+  createPimlicoClient,
+  PimlicoClient
+} from 'permissionless/clients/pimlico'
+import {
+  toSafeSmartAccount,
+  ToSafeSmartAccountReturnType
+} from 'permissionless/accounts'
 import { useEffect, useState } from 'react'
 import truncateEthAddress from 'truncate-eth-address'
+import { SendUserOperationParameters } from 'viem/account-abstraction'
 
 export default function Home () {
-  const [safeAccount, setSafeAccount] = useState(null)
-  const [smartAccountClient, setSmartAccountClient] = useState(null)
+  const [safeAccount, setSafeAccount] =
+    useState<ToSafeSmartAccountReturnType<'0.7'> | null>(null)
+  const [smartAccountClient, setSmartAccountClient] = useState<
+    | (Client<
+        HttpTransport,
+        typeof sepolia,
+        ToSafeSmartAccountReturnType<'0.7'>
+      > &
+        Erc7579Actions<ToSafeSmartAccountReturnType<'0.7'>> & {
+          sendUserOperation: (
+            params: SendUserOperationParameters
+          ) => Promise<string>
+        })
+    | null
+  >(null)
   const [ownerAddress, setOwnerAddress] = useState<string | null>(null)
-  const [publicClient, setPublicClient] = useState<>(null)
   const [executorAddress, setExecutorAddress] = useState<string | null>(null)
   const [safeAddress, setSafeAddress] = useState<string | null>(null)
   const [safeIsDeployed, setSafeIsDeployed] = useState(false)
@@ -38,7 +60,11 @@ export default function Home () {
   const ownableExecutorModule = '0xc98B026383885F41d9a995f85FC480E9bb8bB891'
 
   // We create a wallet client to connect to MetaMask:
-  const walletClient = createWalletClient({
+  const walletClient = createWalletClient<
+    Transport,
+    typeof sepolia,
+    `0x${string}`
+  >({
     chain: sepolia,
     transport: custom(window.ethereum!)
   })
@@ -48,7 +74,11 @@ export default function Home () {
     'https://api.pimlico.io/v2/sepolia/rpc?apikey=YOUR_PIMLICO_API_KEY'
 
   // The Pimlico client is used as a paymaster:
-  const pimlicoClient = createPimlicoClient({
+  const pimlicoClient = createPimlicoClient<
+    '0.7',
+    HttpTransport,
+    typeof sepolia
+  >({
     transport: http(pimlicoUrl),
     chain: sepolia
   })
@@ -74,21 +104,23 @@ export default function Home () {
     checkAddresses()
   }
 
+  // The public client is required for the safe account creation:
+  const publicClient = createPublicClient({
+    transport: http('https://rpc.ankr.com/eth_sepolia'),
+    chain: sepolia
+  })
+
   // The following functions will be filled with code in the following steps:
 
   const init = async () => {
-    // The public client is required for the safe account creation:
-    const publicClient = createPublicClient({
-      transport: http('https://rpc.ankr.com/eth_sepolia'),
-      chain: sepolia
-    })
-
     // The safe account is created using the public client:
-    const safeAccount = await toSafeSmartAccount({
+    const safeAccount = await toSafeSmartAccount<
+      '0.7',
+      '0xEBe001b3D534B9B6E2500FB78E67a1A137f561CE'
+    >({
       client: publicClient,
       owners: [walletClient],
       version: '1.4.1',
-      chain: sepolia,
       // These modules are required for the 7579 functionality:
       safe4337ModuleAddress: '0x3Fdb5BC686e861480ef99A6E3FaAe03c0b9F32e2', // These are not meant to be used in production as of now.
       erc7579LaunchpadAddress: '0xEBe001b3D534B9B6E2500FB78E67a1A137f561CE' // These are not meant to be used in production as of now.
@@ -98,7 +130,12 @@ export default function Home () {
     setSafeIsDeployed(await safeAccount.isDeployed())
 
     // Finally, we create the smart account client, which provides functionality to interact with the smart account:
-    const smartAccountClient = createSmartAccountClient({
+    const smartAccountClient = createSmartAccountClient<
+      HttpTransport,
+      typeof sepolia,
+      ToSafeSmartAccountReturnType<'0.7'>,
+      PimlicoClient<'0.7', HttpTransport, typeof sepolia>
+    >({
       account: safeAccount,
       chain: sepolia,
       bundlerTransport: http(pimlicoUrl),
@@ -122,7 +159,6 @@ export default function Home () {
     // We store the clients in the state to use them in the following steps:
     setSafeAccount(safeAccount)
     setSmartAccountClient(smartAccountClient)
-    setPublicClient(publicClient)
 
     console.log('setup done')
   }
@@ -135,23 +171,23 @@ export default function Home () {
     // operations. The Pimlico bundler takes those user operations and sends them to the blockchain as regular
     // transactions. We also use the Pimlico paymaster to sponsor the transaction. So, all interactions are free
     // on Sepolia.
-    const userOpHash = await smartAccountClient.installModule({
+    const userOpHash = await smartAccountClient?.installModule({
       type: 'executor',
       address: ownableExecutorModule,
-      context: encodePacked(['address'], [executorAddress])
+      context: encodePacked(['address'], [executorAddress as `0x${string}`])
     })
 
     console.log('User operation hash:', userOpHash, '\nwaiting for receipt...')
 
     // After we sent the user operation, we wait for the transaction to be settled:
     const transactionReceipt = await pimlicoClient.waitForUserOperationReceipt({
-      hash: userOpHash
+      hash: userOpHash as `0x${string}`
     })
 
     console.log('Module installed:', transactionReceipt)
 
     setModuleIsInstalled(true)
-    setSafeIsDeployed(await safeAccount?.isDeployed())
+    setSafeIsDeployed((await safeAccount?.isDeployed()) ?? false)
     setLoading(false)
   }
 
@@ -172,16 +208,16 @@ export default function Home () {
     // Now, we call the `executeOnOwnedAccount` function of the `ownableExecutorModule` with the address of the safe
     // account and the data we want to execute. This will make our smart account send the transaction that is encoded above.
     const hash = await walletClient.writeContract({
-      account: executorAddress,
+      account: executorAddress as `0x${string}`,
       abi: parseAbi(['function executeOnOwnedAccount(address, bytes)']),
       functionName: 'executeOnOwnedAccount',
-      args: [safeAddress, executeOnOwnedAccountData],
+      args: [safeAddress as `0x${string}`, executeOnOwnedAccountData],
       address: ownableExecutorModule
     })
 
     console.log('Executed on owned account, transaction hash:', hash)
 
-    await publicClient.waitForTransactionReceipt({ hash })
+    await publicClient?.waitForTransactionReceipt({ hash })
 
     setExecutorTransactionIsSent(true)
     setLoading(false)
@@ -200,15 +236,15 @@ export default function Home () {
 
     // We use the smart account client to send the user operation: In this call, our smart account calls the `addOwner`
     // function at the `ownableExecutorModule` with the new owner's address.
-    const userOp = await smartAccountClient.sendUserOperation({
-      calls: [{ to: ownableExecutorModule, value: 0, data: addOwnerData }]
+    const userOp = await smartAccountClient?.sendUserOperation({
+      calls: [{ to: ownableExecutorModule, value: 0n, data: addOwnerData }]
     })
 
     console.log('User operation:', userOp, '\nwaiting for tx receipt...')
 
     // Again, we wait for the transaction to be settled:
     const receipt = await pimlicoClient.waitForUserOperationReceipt({
-      hash: userOp
+      hash: userOp as `0x${string}`
     })
 
     console.log('Owner added, tx receipt:', receipt)
@@ -226,7 +262,7 @@ export default function Home () {
     // - deInitData (bytes): The data that is passed to the deInit function of the module.
     // As this is the only module, the previous entry is the sentinel address 0x1. The deInitData is empty for the
     // OwnableExecutor.
-    const userOp = await smartAccountClient.uninstallModule({
+    const userOp = await smartAccountClient?.uninstallModule({
       type: 'executor',
       address: ownableExecutorModule,
       context: encodeAbiParameters(
@@ -239,7 +275,7 @@ export default function Home () {
 
     // We wait for the transaction to be settled:
     const receipt = await pimlicoClient.waitForUserOperationReceipt({
-      hash: userOp
+      hash: userOp as `0x${string}`
     })
 
     console.log('Module uninstalled, tx receipt:', receipt)
@@ -283,7 +319,7 @@ export default function Home () {
         <div className='actions'>
           <button
             onClick={installModule}
-            className={loading && 'button--loading'}
+            className={loading ? 'button--loading' : ''}
           >
             Install Module
           </button>
@@ -318,7 +354,7 @@ export default function Home () {
           </button>
           <button
             onClick={executeOnOwnedAccount}
-            className={loading && 'button--loading'}
+            className={loading ? 'button--loading' : ''}
           >
             Execute on owned account
           </button>
@@ -348,7 +384,10 @@ export default function Home () {
             >
               Skip
             </button>
-            <button onClick={addOwner} className={loading && 'button--loading'}>
+            <button
+              onClick={addOwner}
+              className={loading ? 'button--loading' : ''}
+            >
               Add Owner
             </button>
           </div>
@@ -370,7 +409,7 @@ export default function Home () {
         <div className='actions'>
           <button
             onClick={uninstallModule}
-            className={loading && 'button--loading'}
+            className={loading ? 'button--loading' : ''}
           >
             Uninstall Module
           </button>
