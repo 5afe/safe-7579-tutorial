@@ -86,6 +86,7 @@ export default function Home () {
   // Check for connected accounts on page load:
   useEffect(() => {
     checkAddresses()
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
   // Check whether the user has connected two accounts, without MetaMask popping up:
