@@ -121,8 +121,10 @@ export default function Home () {
       erc7579LaunchpadAddress: '0xEBe001b3D534B9B6E2500FB78E67a1A137f561CE' // These are not meant to be used in production as of now.
     })
 
+    const safeIsDeployed = await safeAccount.isDeployed()
+
     setSafeAddress(safeAccount.address)
-    setSafeIsDeployed(await safeAccount.isDeployed())
+    setSafeIsDeployed(safeIsDeployed)
 
     // Finally, we create the smart account client, which provides functionality to interact with the smart account:
     const smartAccountClient = createSmartAccountClient({
@@ -138,11 +140,13 @@ export default function Home () {
     }).extend(erc7579Actions())
 
     // Check whether the module has been installed already:
-    const isModuleInstalled = await smartAccountClient.isModuleInstalled({
-      address: ownableExecutorModule,
-      type: 'executor',
-      context: '0x'
-    })
+    const isModuleInstalled =
+      safeIsDeployed &&
+      (await smartAccountClient.isModuleInstalled({
+        address: ownableExecutorModule,
+        type: 'executor',
+        context: '0x'
+      }))
 
     setModuleIsInstalled(isModuleInstalled)
 
